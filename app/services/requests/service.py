@@ -1,0 +1,302 @@
+"""
+Service слой для работы с заявками на бронирование (TripRequest).
+Содержит бизнес-логику и проверки.
+"""
+from typing import Optional
+from uuid import UUID
+
+from fastapi import HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.requests.model import TripRequest, TripRequestStatus
+from app.models.trips.model import Trip, TripStatus
+from app.repositories.requests.repository import TripRequestRepository
+from app.schemas.requests import TripRequestCreate, TripRequestList
+
+
+class TripRequestServiceError(Exception):
+    """Базовый класс для ошибок сервиса заявок."""
+    pass
+
+
+class TripNotFoundError(TripRequestServiceError):
+    """Поездка не найдена."""
+    pass
+
+
+class TripNotAvailableError(TripRequestServiceError):
+    """Поездка недоступна для бронирования."""
+    pass
+
+
+class TripRequestNotFoundError(TripRequestServiceError):
+    """Заявка не найдена."""
+    pass
+
+
+class TripRequestAlreadyExistsError(TripRequestServiceError):
+    """Заявка уже существует."""
+    pass
+
+
+class TripRequestAlreadyProcessedError(TripRequestServiceError):
+    """Заявка уже обработана."""
+    pass
+
+
+class InsufficientSeatsError(TripRequestServiceError):
+    """Недостаточно мест."""
+    pass
+
+
+class ForbiddenError(TripRequestServiceError):
+    """Нет прав доступа."""
+    pass
+
+
+class CannotBookOwnTripError(TripRequestServiceError):
+    """Нельзя забронировать свою поездку."""
+    pass
+
+
+class InvalidStatusTransitionError(TripRequestServiceError):
+    """Недопустимый переход статуса."""
+    pass
+
+
+class TripRequestService:
+    """Service для работы с заявками на бронирование."""
+
+    def __init__(self, session: AsyncSession):
+        self.session = session
+        self.repository = TripRequestRepository(session)
+
+    async def create_request(
+        self,
+        trip_id: UUID,
+        passenger_id: UUID,
+        data: TripRequestCreate,
+    ) -> TripRequest:
+        """Создание заявки на бронирование."""
+        # Получаем поездку
+        from sqlalchemy import select
+        result = await self.session.execute(
+            select(Trip).where(Trip.id == trip_id)
+        )
+        trip = result.scalar_one_or_none()
+
+        if not trip:
+            raise TripNotFoundError("Поездка не найдена")
+
+        # Проверка: поездка доступна для бронирования
+        if trip.status not in [TripStatus.PUBLISHED, TripStatus.ACTIVE]:
+            raise TripNotAvailableError("Поездка недоступна для бронирования")
+
+        # Проверка: пассажир не является водителем
+        if trip.driver_id == passenger_id:
+            raise CannotBookOwnTripError("Нельзя подать заявку на свою поездку")
+
+        # Проверка: достаточно мест
+        if trip.available_seats < data.seats_requested:
+            raise InsufficientSeatsError(
+                f"Доступно мест: {trip.available_seats}, запрошено: {data.seats_requested}"
+            )
+
+        # Проверка: нет активной заявки
+        existing_request = await self.repository.get_pending_by_trip_and_passenger(
+            trip_id, passenger_id
+        )
+        if existing_request:
+            raise TripRequestAlreadyExistsError("У вас уже есть активная заявка на эту поездку")
+
+        # Создаём заявку
+        request = await self.repository.create(
+            trip_id=trip_id,
+            passenger_id=passenger_id,
+            seats_requested=data.seats_requested,
+            message=data.message,
+        )
+
+        return request
+
+    async def get_request(self, request_id: UUID) -> TripRequest:
+        """Получение заявки по ID."""
+        request = await self.repository.get_by_id(request_id)
+        if not request:
+            raise TripRequestNotFoundError("Заявка не найдена")
+        return request
+
+    async def get_trip_requests(
+        self,
+        trip_id: UUID,
+        status_filter: Optional[TripRequestStatus] = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> TripRequestList:
+        """Получение списка заявок для поездки."""
+        offset = (page - 1) * page_size
+        requests, total = await self.repository.list_by_trip(
+            trip_id=trip_id,
+            status=status_filter,
+            limit=page_size,
+            offset=offset,
+        )
+        
+        pages = (total + page_size - 1) // page_size
+        
+        return TripRequestList(
+            items=requests,
+            total=total,
+            page=page,
+            page_size=page_size,
+            pages=pages,
+        )
+
+    async def get_my_requests(
+        self,
+        passenger_id: UUID,
+        status_filter: Optional[TripRequestStatus] = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> TripRequestList:
+        """Получение списка заявок пассажира."""
+        offset = (page - 1) * page_size
+        requests, total = await self.repository.list_by_passenger(
+            passenger_id=passenger_id,
+            status=status_filter,
+            limit=page_size,
+            offset=offset,
+        )
+        
+        pages = (total + page_size - 1) // page_size
+        
+        return TripRequestList(
+            items=requests,
+            total=total,
+            page=page,
+            page_size=page_size,
+            pages=pages,
+        )
+
+    async def get_driver_requests(
+        self,
+        driver_id: UUID,
+        status_filter: Optional[TripRequestStatus] = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> TripRequestList:
+        """Получение списка заявок на поездки водителя."""
+        offset = (page - 1) * page_size
+        requests, total = await self.repository.list_by_driver(
+            driver_id=driver_id,
+            status=status_filter,
+            limit=page_size,
+            offset=offset,
+        )
+        
+        pages = (total + page_size - 1) // page_size
+        
+        return TripRequestList(
+            items=requests,
+            total=total,
+            page=page,
+            page_size=page_size,
+            pages=pages,
+        )
+
+    async def confirm_request(
+        self,
+        request_id: UUID,
+        driver_id: UUID,
+    ) -> TripRequest:
+        """Подтверждение заявки водителем."""
+        # Получаем заявку
+        request = await self.repository.get_by_id(request_id)
+        if not request:
+            raise TripRequestNotFoundError("Заявка не найдена")
+
+        # Проверяем права: водитель должен быть владельцем поездки
+        trip = request.trip
+        if not trip or trip.driver_id != driver_id:
+            raise ForbiddenError("Вы не являетесь водителем этой поездки")
+
+        # Проверяем статус
+        if request.status != TripRequestStatus.PENDING:
+            raise TripRequestAlreadyProcessedError("Заявка уже обработана")
+
+        # Проверяем доступность мест
+        if trip.available_seats < request.seats_requested:
+            raise InsufficientSeatsError("Недостаточно доступных мест")
+
+        # Подтверждаем заявку
+        confirmed_request = await self.repository.confirm(request_id)
+        if not confirmed_request:
+            raise TripRequestAlreadyProcessedError("Заявка уже обработана")
+
+        # Уменьшаем доступные места (в той же транзакции)
+        trip.available_seats -= request.seats_requested
+        await self.session.flush()
+
+        return confirmed_request
+
+    async def reject_request(
+        self,
+        request_id: UUID,
+        driver_id: UUID,
+        reason: Optional[str] = None,
+    ) -> TripRequest:
+        """Отклонение заявки водителем."""
+        # Получаем заявку
+        request = await self.repository.get_by_id(request_id)
+        if not request:
+            raise TripRequestNotFoundError("Заявка не найдена")
+
+        # Проверяем права: водитель должен быть владельцем поездки
+        trip = request.trip
+        if not trip or trip.driver_id != driver_id:
+            raise ForbiddenError("Вы не являетесь водителем этой поездки")
+
+        # Проверяем статус
+        if request.status != TripRequestStatus.PENDING:
+            raise TripRequestAlreadyProcessedError("Заявка уже обработана")
+
+        # Отклоняем заявку
+        rejected_request = await self.repository.reject(request_id, reason)
+        if not rejected_request:
+            raise TripRequestAlreadyProcessedError("Заявка уже обработана")
+
+        return rejected_request
+
+    async def cancel_request(
+        self,
+        request_id: UUID,
+        user_id: UUID,
+    ) -> TripRequest:
+        """Отмена заявки пассажиром."""
+        # Получаем заявку
+        request = await self.repository.get_by_id(request_id)
+        if not request:
+            raise TripRequestNotFoundError("Заявка не найдена")
+
+        # Проверяем права: только владелец заявки может отменить
+        if request.passenger_id != user_id:
+            raise ForbiddenError("Вы не являетесь владельцем этой заявки")
+
+        # Проверяем статус
+        if request.status != TripRequestStatus.PENDING:
+            raise TripRequestAlreadyProcessedError("Заявка уже обработана")
+
+        # Отменяем заявку
+        cancelled_request = await self.repository.cancel(request_id, "passenger")
+        if not cancelled_request:
+            raise TripRequestAlreadyProcessedError("Заявка уже обработана")
+
+        return cancelled_request
+
+    def _check_driver_owns_trip(self, request: TripRequest, driver_id: UUID) -> bool:
+        """Проверка, что водитель владеет поездкой."""
+        return request.trip and request.trip.driver_id == driver_id
+
+    def _check_passenger_owns_request(self, request: TripRequest, passenger_id: UUID) -> bool:
+        """Проверка, что пассажир владеет заявкой."""
+        return request.passenger_id == passenger_id
