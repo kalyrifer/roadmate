@@ -26,14 +26,40 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Проверка пароля."""
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-def get_password_hash(password: str) -> str:
-    """Хеширование пароля."""
+def hash_password(password: str) -> str:
+    """
+    Возвращает безопасный хэш пароля.
+    
+    Использует bcrypt через Passlib для безопасного хэширования.
+    Каждый вызов генерирует уникальную соль (salt).
+    
+    Args:
+        password: Пароль в открытом виде
+        
+    Returns:
+        str: Хэш пароля для хранения в БД
+    """
     return pwd_context.hash(password)
+
+
+# Alias for backward compatibility
+get_password_hash = hash_password
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """
+    Сравнивает пароль с хэшем.
+    
+    Защищен от timing attacks через Passlib.
+    
+    Args:
+        plain_password: Пароль в открытом виде
+        hashed_password: Хэш пароля из базы
+        
+    Returns:
+        bool: True если пароли совпадают, False иначе
+    """
+    return pwd_context.verify(plain_password, hashed_password)
 
 
 def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
@@ -59,5 +85,23 @@ def decode_token(token: str) -> TokenData | None:
         if user_id is None:
             return None
         return TokenData(user_id=user_id)
+    except JWTError:
+        return None
+
+
+def decode_access_token(token: str) -> dict[str, Any] | None:
+    """
+    Декодирование JWT токена с возвратом payload.
+    
+    Args:
+        token: JWT токен
+        
+    Returns:
+        dict[str, Any] | None: Payload токена или None при ошибке
+    """
+    try:
+        secret_key = settings.jwt.SECRET_KEY.get_secret_value()
+        payload = jwt.decode(token, secret_key, algorithms=[settings.jwt.ALGORITHM])
+        return payload
     except JWTError:
         return None

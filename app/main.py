@@ -1,13 +1,21 @@
 """
 Основной файл FastAPI приложения.
 """
+import os
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api import websocket
 from app.api.v1.api_router import api_router
 from app.core.config import settings
 from app.db.session import create_tables
+
+# Создание директории для загрузок
+upload_dir = Path(settings.files.UPLOAD_DIR)
+upload_dir.mkdir(parents=True, exist_ok=True)
 
 # Создание приложения
 app = FastAPI(
@@ -35,6 +43,12 @@ async def startup_event() -> None:
 # Подключение роутеров
 app.include_router(api_router)
 app.include_router(websocket.router)
+
+# Подключение статических файлов для аватаров
+# Проверяем и создаем директорию
+avatars_dir = upload_dir / "avatars"
+avatars_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(upload_dir)), name="uploads")
 
 
 @app.get("/")
