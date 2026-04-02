@@ -133,6 +133,40 @@ async def search_trips(
     return await trip_service.search_trips(filters)
 
 
+@router.get("/my/driver", response_model=PaginatedTrips)
+async def get_my_trips(
+    current_user: CurrentUserDep,
+    trip_service: TripServiceDep,
+    status: str | None = None,
+    page: int = 1,
+    limit: int = 10,
+    sort_by: str = "departure_date",
+) -> PaginatedTrips:
+    """
+    Получение списка своих поездок (водитель).
+    
+    Возвращает поездки текущего пользователя с пагинацией.
+    
+    Args:
+        current_user: Текущий авторизованный пользователь
+        trip_service: Сервис для работы с поездками
+        status: Фильтр по статусу (optional)
+        page: Номер страницы
+        limit: Количество элементов на странице
+        sort_by: Поле для сортировки (departure_date или created_at)
+        
+    Returns:
+        PaginatedTrips: Список поездок с пагинацией
+    """
+    return await trip_service.get_driver_trips(
+        current_user=current_user,
+        status_filter=status,
+        page=page,
+        limit=limit,
+        sort_by=sort_by,
+    )
+
+
 @router.post("/", response_model=TripResponse, status_code=status.HTTP_201_CREATED)
 async def create_trip(
     trip_data: TripCreateRequest,
@@ -309,38 +343,4 @@ async def publish_trip(
     return await trip_service.publish_trip(
         current_user=current_user,
         trip_id=trip_uuid
-    )
-
-
-@router.get("/my/driver", response_model=PaginatedTrips)
-async def get_my_trips(
-    current_user: CurrentUserDep,
-    trip_service: TripServiceDep,
-    status: str | None = None,
-    page: int = 1,
-    limit: int = 10,
-    sort_by: str = "departure_date",
-) -> PaginatedTrips:
-    """
-    Получение списка своих поездок (водитель).
-    
-    Возвращает поездки текущего пользователя с пагинацией.
-    
-    Args:
-        current_user: Текущий авторизованный пользователь
-        trip_service: Сервис для работы с поездками
-        status: Фильтр по статусу (optional)
-        page: Номер страницы
-        limit: Количество элементов на странице
-        sort_by: Поле для сортировки (departure_date или created_at)
-        
-    Returns:
-        PaginatedTrips: Список поездок с пагинацией
-    """
-    return await trip_service.get_driver_trips(
-        current_user=current_user,
-        status_filter=status,
-        page=page,
-        limit=limit,
-        sort_by=sort_by,
     )
