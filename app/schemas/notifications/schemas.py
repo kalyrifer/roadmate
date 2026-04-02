@@ -23,6 +23,7 @@ class NotificationCreate(NotificationBase):
     user_id: UUID
     related_trip_id: Optional[UUID] = None
     related_request_id: Optional[UUID] = None
+    related_conversation_id: Optional[UUID] = None
 
 
 class NotificationUpdate(BaseModel):
@@ -36,6 +37,7 @@ class NotificationResponse(NotificationBase):
     user_id: UUID
     related_trip_id: Optional[UUID] = None
     related_request_id: Optional[UUID] = None
+    related_conversation_id: Optional[UUID] = None
     read_at: Optional[datetime] = None
     created_at: datetime
 

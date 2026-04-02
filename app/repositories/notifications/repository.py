@@ -24,6 +24,7 @@ class NotificationRepository:
         message: str,
         related_trip_id: Optional[UUID] = None,
         related_request_id: Optional[UUID] = None,
+        related_conversation_id: Optional[UUID] = None,
     ) -> Notification:
         """Создание нового уведомления."""
         notification = Notification(
@@ -33,6 +34,7 @@ class NotificationRepository:
             message=message,
             related_trip_id=related_trip_id,
             related_request_id=related_request_id,
+            related_conversation_id=related_conversation_id,
         )
         self.session.add(notification)
         await self.session.flush()

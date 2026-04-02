@@ -9,8 +9,9 @@ Service слой для работы с чатами (Chat).
 """
 from typing import Optional
 from uuid import UUID
+import logging
 
-from sqlalchemy import select
+from sqlalchemy import and_, select, update, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.chat.model import Conversation, ConversationParticipant, Message
@@ -23,6 +24,8 @@ from app.schemas.chat.schemas import (
     MessageCreate,
     MessageList,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class ChatServiceError(Exception):
@@ -222,6 +225,13 @@ class ChatService:
         await self.session.flush()
         await self.session.refresh(message)
 
+        # Отправляем уведомление о новом сообщении
+        await self._send_message_notification(
+            conversation_id=conversation.id,
+            sender_id=sender_id,
+            message_content=content,
+        )
+
         return conversation, message
 
     async def get_conversation(
@@ -258,8 +268,70 @@ class ChatService:
 
         pages = (total + page_size - 1) // page_size
 
+        # Конвертируем модели в схемы
+        from app.schemas.chat import ConversationRead, ConversationParticipantRead, MessageRead, UserBrief
+        
+        items = []
+        for conv in conversations:
+            # Получаем участников с данными пользователей
+            participants = []
+            for p in conv.participants:
+                p_data = {
+                    "id": p.id,
+                    "conversation_id": p.conversation_id,
+                    "user_id": p.user_id,
+                    "is_muted": p.is_muted,
+                    "last_read_message_id": p.last_read_message_id,
+                    "joined_at": p.joined_at,
+                }
+                # Добавляем данные пользователя если они загружены
+                if p.user:
+                    p_data["user"] = {
+                        "id": p.user.id,
+                        "first_name": p.user.first_name,
+                        "last_name": p.user.last_name,
+                        "avatar_url": p.user.avatar_url,
+                    }
+                participants.append(ConversationParticipantRead(**p_data))
+            
+            # Получаем последнее сообщение
+            last_message = None
+            if conv.messages:
+                latest = conv.messages[0]
+                last_message = MessageRead(
+                    id=latest.id,
+                    conversation_id=latest.conversation_id,
+                    sender_id=latest.sender_id,
+                    content=latest.content,
+                    is_read=latest.is_read,
+                    created_at=latest.created_at,
+                    updated_at=latest.updated_at,
+                )
+            
+            # Получаем данные о поездке
+            trip_data = None
+            if conv.trip:
+                trip_data = {
+                    "from_city": conv.trip.from_city,
+                    "to_city": conv.trip.to_city,
+                    "departure_date": conv.trip.departure_date.isoformat() if conv.trip.departure_date else None,
+                    "departure_time_start": str(conv.trip.departure_time_start) if conv.trip.departure_time_start else None,
+                    "driver_id": str(conv.trip.driver_id),
+                }
+            
+            items.append(ConversationRead(
+                id=conv.id,
+                trip_id=conv.trip_id,
+                created_at=conv.created_at,
+                updated_at=conv.updated_at,
+                last_message_at=conv.last_message_at,
+                participants=participants,
+                last_message=last_message,
+                trip=trip_data,
+            ))
+
         return ConversationList(
-            items=conversations,
+            items=items,
             total=total,
             page=page,
             page_size=page_size,
@@ -311,7 +383,10 @@ class ChatService:
         """Отправка сообщения.
 
         Проверяем, что отправитель - участник чата.
+        Обновляем last_message_at и создаём уведомление получателю.
         """
+        from datetime import datetime
+
         # Проверяем участие
         await self._check_conversation_participant(conversation_id, sender_id)
 
@@ -322,10 +397,82 @@ class ChatService:
             data.content,
         )
 
+        # Обновляем last_message_at в разговоре
+        await self.session.execute(
+            update(Conversation)
+            .where(Conversation.id == conversation_id)
+            .values(last_message_at=datetime.utcnow())
+        )
+
+        # Отправляем уведомление получателю
+        await self._notify_message_recipient(
+            conversation_id=conversation_id,
+            sender_id=sender_id,
+            message_content=data.content,
+        )
+
         await self.session.flush()
         await self.session.refresh(message)
 
         return message
+
+    async def _notify_message_recipient(
+        self,
+        conversation_id: UUID,
+        sender_id: UUID,
+        message_content: str,
+    ) -> None:
+        """Создание уведомления получателю сообщения."""
+        try:
+            # Находим всех участников чата
+            result = await self.session.execute(
+                select(ConversationParticipant).where(
+                    ConversationParticipant.conversation_id == conversation_id
+                )
+            )
+            participants = result.scalars().all()
+
+            # Находим получателя (не отправителя)
+            recipient_id = None
+            for p in participants:
+                if p.user_id != sender_id:
+                    recipient_id = p.user_id
+                    break
+
+            if not recipient_id:
+                logger.warning(
+                    f"No recipient found for conversation {conversation_id}"
+                )
+                return
+
+            # Получаем информацию об отправителе
+            sender = await self._get_user(sender_id)
+            sender_name = (
+                f"{sender.first_name} {sender.last_name}"
+                if sender
+                else "Пользователь"
+            )
+
+            # Создаём уведомление
+            from app.services.notifications.service import (
+                NotificationEventService,
+            )
+
+            notification_service = NotificationEventService(self.session)
+            await notification_service.notify_new_message(
+                recipient_id=recipient_id,
+                sender_name=sender_name,
+                conversation_id=conversation_id,
+                message_preview=message_content[:100]  # Ограничиваем длину
+            )
+            await self.session.flush()
+
+        except Exception as e:
+            # Логируем ошибку, но не прерываем отправку сообщения
+            logger.error(
+                f"Failed to send notification for message in conversation "
+                f"{conversation_id}: {e}"
+            )
 
     async def get_messages(
         self,

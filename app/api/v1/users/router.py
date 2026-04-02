@@ -39,6 +39,69 @@ async def get_user_service(
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 
 
+# ВАЖНО: /me должен быть ДО /{user_id}, иначе "me" интерпретируется как UUID
+@router.get("/me", response_model=UserResponse)
+async def get_my_profile(
+    user_service: UserServiceDep,
+    current_user: CurrentUser,
+) -> UserResponse:
+    """
+    Просмотр своего профиля.
+    
+    Shorthand для GET /{user_id} где user_id = текущий пользователь.
+    
+    Args:
+        current_user: Текущий авторизованный пользователь
+        user_service: Сервис пользователей
+        
+    Returns:
+        UserResponse: Данные профиля пользователя
+    """
+    return await user_service.get_user_profile(current_user.id)
+
+
+@router.put("/me", response_model=UserResponse)
+async def update_my_profile(
+    user_service: UserServiceDep,
+    current_user: CurrentUser,
+    name: str | None = Form(None, description="Имя пользователя"),
+    phone: str | None = Form(None, description="Номер телефона"),
+    bio: str | None = Form(None, description="Описание профиля"),
+    language: str | None = Form(None, description="Язык интерфейса (ru, en)"),
+    avatar: UploadFile | None = Form(None, description="Файл аватара"),
+) -> UserResponse:
+    """
+    Редактирование своего профиля.
+    
+    Shorthand для PUT /{user_id} где user_id = текущий пользователь.
+    
+    Args:
+        name: Имя пользователя
+        phone: Номер телефона
+        bio: Описание профиля
+        language: Язык интерфейса
+        avatar: Файл аватара
+        current_user: Текущий авторизованный пользователь
+        user_service: Сервис пользователей
+        
+    Returns:
+        UserResponse: Обновленный профиль пользователя
+    """
+    update_data = UserUpdateRequest(
+        name=name,
+        phone=phone,
+        bio=bio,
+        language=language,
+    )
+    
+    return await user_service.update_user_profile(
+        current_user=current_user,
+        target_user_id=current_user.id,
+        update_data=update_data,
+        avatar_file=avatar,
+    )
+
+
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user_profile(
     user_id: str,

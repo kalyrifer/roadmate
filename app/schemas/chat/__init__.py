@@ -26,6 +26,8 @@ from app.schemas.chat.schemas import (
     MessageCreateResponse,
     MessageList,
     MessageRead,
+    MessageReadUpdate,
+    UserBrief,
     WebSocketConnection,
     WebSocketMessage,
 )
@@ -41,6 +43,8 @@ __all__ = [
     "MessageCreateResponse",
     "MessageList",
     "MessageRead",
+    "MessageReadUpdate",
+    "UserBrief",
     "WebSocketConnection",
     "WebSocketMessage",
 ]

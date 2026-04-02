@@ -245,10 +245,20 @@ class NotificationEventService:
         self,
         recipient_id: UUID,
         sender_name: str,
-        trip_id: UUID,
+        conversation_id: UUID,
         message_preview: str,
     ) -> NotificationResponse:
         """Уведомление о новом сообщении."""
+        # Получаем trip_id из conversation
+        from sqlalchemy import select
+        from app.models.chat.model import Conversation
+
+        result = await self.session.execute(
+            select(Conversation).where(Conversation.id == conversation_id)
+        )
+        conversation = result.scalar_one_or_none()
+        trip_id = conversation.trip_id if conversation else None
+
         preview = message_preview[:100] + "..." if len(message_preview) > 100 else message_preview
 
         notification = await self.repository.create(
@@ -257,5 +267,6 @@ class NotificationEventService:
             title=f"Новое сообщение от {sender_name}",
             message=preview,
             related_trip_id=trip_id,
+            related_conversation_id=conversation_id,
         )
         return NotificationResponse.model_validate(notification)

@@ -107,6 +107,7 @@ class ChatRepository:
                     ConversationParticipant.user
                 ),
                 selectinload(Conversation.messages),
+                selectinload(Conversation.trip),
             )
             .order_by(Conversation.last_message_at.desc().nullslast())
             .limit(limit)

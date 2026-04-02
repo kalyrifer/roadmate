@@ -66,6 +66,16 @@ class MessageReadUpdate(BaseModel):
 
 # === Схемы чтения (ответы API) ===
 
+class UserBrief(BaseModel):
+    """Краткая информация о пользователе."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    first_name: str
+    last_name: str
+    avatar_url: Optional[str] = None
+
+
 class ConversationParticipantRead(ConversationParticipantBase):
     """Схема для чтения участника чата."""
     model_config = ConfigDict(from_attributes=True)
@@ -76,16 +86,7 @@ class ConversationParticipantRead(ConversationParticipantBase):
     is_muted: bool
     last_read_message_id: Optional[UUID] = None
     joined_at: datetime
-
-
-class UserBrief(BaseModel):
-    """Краткая информация о пользователе."""
-    model_config = ConfigDict(from_attributes=True)
-
-    id: UUID
-    first_name: str
-    last_name: str
-    avatar_url: Optional[str] = None
+    user: Optional[UserBrief] = None
 
 
 class ConversationRead(ConversationBase):
@@ -99,6 +100,7 @@ class ConversationRead(ConversationBase):
     last_message_at: Optional[datetime] = None
     participants: list[ConversationParticipantRead] = []
     last_message: Optional["MessageRead"] = None
+    trip: Optional[dict] = None  # { from_city, to_city, departure_date, departure_time_start }
 
 
 class MessageRead(MessageBase):

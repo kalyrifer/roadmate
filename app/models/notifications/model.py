@@ -113,6 +113,16 @@ class Notification(Base):
         index=True,
         comment="ID связанной заявки",
     )
+    related_conversation_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "conversations.id",
+            ondelete="SET NULL",
+        ),
+        nullable=True,
+        index=True,
+        comment="ID связанного чата",
+    )
 
     # === Служебные поля ===
     read_at: Mapped[datetime | None] = mapped_column(

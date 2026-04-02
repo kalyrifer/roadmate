@@ -13,14 +13,14 @@
 
 WebSocket: app/api/websocket.py
 """
+import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import DbSession
-from app.core.dependencies import get_current_user
-from app.models.users.model import User
+from app.core.dependencies import CurrentUser, get_current_user
+from app.db.session import get_db
 from app.schemas.chat import (
     ConversationCreate,
     ConversationCreateResponse,
@@ -29,7 +29,7 @@ from app.schemas.chat import (
     MessageCreate,
     MessageCreateResponse,
     MessageList,
-    MessageRead,
+    MessageReadUpdate,
 )
 from app.services.chat import (
     ChatService,
@@ -39,17 +39,8 @@ from app.services.chat import (
     NotParticipantError,
     TripNotFoundError,
 )
-from app.db.session import AsyncSession, get_db
 
 router = APIRouter()
-security = HTTPBearer()
-
-
-async def get_current_user_dep(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> User:
-    """Получение текущего пользователя из токена."""
-    return await get_current_user(credentials.credentials)
 
 
 async def get_chat_service(
@@ -70,7 +61,7 @@ async def get_chat_service(
 async def create_conversation_by_trip(
     trip_id: UUID,
     data: MessageCreate,
-    current_user: User = Depends(get_current_user_dep),
+    current_user: CurrentUser,
     chat_service: ChatService = Depends(get_chat_service),
 ) -> ConversationCreateResponse:
     """Создание чата для поездки с первым сообщением."""
@@ -87,7 +78,7 @@ async def create_conversation_by_trip(
             created_at=conversation.created_at,
             updated_at=conversation.updated_at,
             last_message_at=conversation.last_message_at,
-            participants=[],  # Загружается отдельно при необходимости
+            participants=[],
             last_message=MessageCreateResponse(
                 id=message.id,
                 conversation_id=message.conversation_id,
@@ -124,7 +115,7 @@ async def create_conversation_by_trip(
 )
 async def create_conversation(
     data: ConversationCreate,
-    current_user: User = Depends(get_current_user_dep),
+    current_user: CurrentUser,
     chat_service: ChatService = Depends(get_chat_service),
 ) -> ConversationCreateResponse:
     """Создание чата."""
@@ -159,17 +150,29 @@ async def create_conversation(
     description="Возвращает список всех чатов, в которых участвует пользователь.",
 )
 async def list_conversations(
+    current_user: CurrentUser,
     page: int = Query(1, ge=1, description="Номер страницы"),
     page_size: int = Query(20, ge=1, le=100, description="Размер страницы"),
-    current_user: User = Depends(get_current_user_dep),
     chat_service: ChatService = Depends(get_chat_service),
 ) -> ConversationList:
     """Получение списка чатов пользователя."""
-    return await chat_service.get_user_conversations(
-        user_id=current_user.id,
-        page=page,
-        page_size=page_size,
-    )
+    import logging
+    logger = logging.getLogger(__name__)
+    try:
+        logger.info(f"Getting conversations for user {current_user.id}, page={page}, page_size={page_size}")
+        result = await chat_service.get_user_conversations(
+            user_id=current_user.id,
+            page=page,
+            page_size=page_size,
+        )
+        logger.info(f"Found {len(result.items)} conversations")
+        return result
+    except Exception as e:
+        logger.error(f"Error getting conversations: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error: {str(e)}",
+        )
 
 
 @router.get(
@@ -181,9 +184,9 @@ async def list_conversations(
 )
 async def list_conversations_by_trip(
     trip_id: UUID,
+    current_user: CurrentUser,
     page: int = Query(1, ge=1, description="Номер страницы"),
     page_size: int = Query(20, ge=1, le=100, description="Размер страницы"),
-    current_user: User = Depends(get_current_user_dep),
     chat_service: ChatService = Depends(get_chat_service),
 ) -> ConversationList:
     """Получение списка чатов по поездке."""
@@ -214,7 +217,7 @@ async def list_conversations_by_trip(
 )
 async def get_conversation(
     conversation_id: UUID,
-    current_user: User = Depends(get_current_user_dep),
+    current_user: CurrentUser,
     chat_service: ChatService = Depends(get_chat_service),
 ) -> ConversationCreateResponse:
     """Получение чата по ID."""
@@ -245,9 +248,9 @@ async def get_conversation(
 )
 async def get_messages(
     conversation_id: UUID,
+    current_user: CurrentUser,
     page: int = Query(1, ge=1, description="Номер страницы"),
     page_size: int = Query(50, ge=1, le=100, description="Размер страницы"),
-    current_user: User = Depends(get_current_user_dep),
     chat_service: ChatService = Depends(get_chat_service),
 ) -> MessageList:
     """Получение сообщений чата."""
@@ -281,7 +284,7 @@ async def get_messages(
 async def send_message(
     conversation_id: UUID,
     data: MessageCreate,
-    current_user: User = Depends(get_current_user_dep),
+    current_user: CurrentUser,
     chat_service: ChatService = Depends(get_chat_service),
 ) -> MessageCreateResponse:
     """Отправка сообщения в чат."""
@@ -313,8 +316,8 @@ async def send_message(
 )
 async def mark_messages_read(
     conversation_id: UUID,
-    data: MessageRead,
-    current_user: User = Depends(get_current_user_dep),
+    data: MessageReadUpdate,
+    current_user: CurrentUser,
     chat_service: ChatService = Depends(get_chat_service),
 ) -> None:
     """Отметка сообщений как прочитанных."""
@@ -341,12 +344,12 @@ async def mark_messages_read(
     "/conversations/{conversation_id}/mute",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Управление уведомлениями",
-    description="Включает или отключает уве��омления для чата.",
+    description="Включает или отключает уведомления для чата.",
 )
 async def set_mute(
     conversation_id: UUID,
     data: ConversationMuteUpdate,
-    current_user: User = Depends(get_current_user_dep),
+    current_user: CurrentUser,
     chat_service: ChatService = Depends(get_chat_service),
 ) -> None:
     """Управление уведомлениями."""
