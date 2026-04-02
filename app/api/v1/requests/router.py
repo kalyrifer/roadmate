@@ -45,7 +45,7 @@ from app.services.requests.service import (
 )
 
 
-router = APIRouter(prefix="/requests", tags=["requests"])
+router = APIRouter(tags=["requests"])
 
 
 # === Схема ответа об ошибке ===
@@ -68,7 +68,7 @@ async def create_request(
     trip_id: UUID,
     data: TripRequestCreate,
     db: DbSession,
-    current_user_id: int,
+    current_user_id: CurrentUserId,
 ):
     """
     Создание заявки на бронирование поездки.
@@ -84,7 +84,7 @@ async def create_request(
     try:
         request = await service.create_request(
             trip_id=trip_id,
-            passenger_id=UUID(int=current_user_id),  # Convert int to UUID
+            passenger_id=current_user_id,
             data=data,
         )
         await db.commit()
@@ -120,7 +120,7 @@ async def create_request(
 async def list_trip_requests(
     trip_id: UUID,
     db: DbSession,
-    current_user_id: int,
+    current_user_id: CurrentUserId,
     status: Optional[TripRequestStatus] = Query(None, description="Фильтр по статусу"),
     page: int = Query(1, ge=1, description="Номер страницы"),
     page_size: int = Query(20, ge=1, le=100, description="Размер страницы"),
@@ -144,12 +144,12 @@ async def list_trip_requests(
 
 # === Мои заявки (пассажир) ===
 @router.get(
-    "/my",
+    "/requests/my",
     response_model=TripRequestList,
 )
 async def get_my_requests(
     db: DbSession,
-    current_user_id: int,
+    current_user_id: CurrentUserId,
     status: Optional[TripRequestStatus] = Query(None, description="Фильтр по статусу"),
     page: int = Query(1, ge=1, description="Номер страницы"),
     page_size: int = Query(20, ge=1, le=100, description="Размер страницы"),
@@ -159,7 +159,7 @@ async def get_my_requests(
     
     try:
         result = await service.get_my_requests(
-            passenger_id=UUID(int=current_user_id),
+            passenger_id=current_user_id,
             status_filter=status,
             page=page,
             page_size=page_size,
@@ -171,12 +171,12 @@ async def get_my_requests(
 
 # === Заявки на мои поездки (водитель) ===
 @router.get(
-    "/driver",
+    "/requests/driver",
     response_model=TripRequestList,
 )
 async def get_driver_requests(
     db: DbSession,
-    current_user_id: int,
+    current_user_id: CurrentUserId,
     status: Optional[TripRequestStatus] = Query(None, description="Фильтр по статусу"),
     page: int = Query(1, ge=1, description="Номер страницы"),
     page_size: int = Query(20, ge=1, le=100, description="Размер страницы"),
@@ -186,7 +186,7 @@ async def get_driver_requests(
     
     try:
         result = await service.get_driver_requests(
-            driver_id=UUID(int=current_user_id),
+            driver_id=current_user_id,
             status_filter=status,
             page=page,
             page_size=page_size,
@@ -198,7 +198,7 @@ async def get_driver_requests(
 
 # === Получение одной заявки ===
 @router.get(
-    "/{request_id}",
+    "/requests/{request_id}",
     response_model=TripRequestRead,
     responses={
         404: {"model": ErrorResponse, "description": "Заявка не найдена"},
@@ -207,7 +207,7 @@ async def get_driver_requests(
 async def get_request(
     request_id: UUID,
     db: DbSession,
-    current_user_id: int,
+    current_user_id: CurrentUserId,
 ):
     """Получение заявки по ID."""
     service = TripRequestService(db)
@@ -216,8 +216,8 @@ async def get_request(
         request = await service.get_request(request_id)
         
         # Проверка доступа: владелец заявки или водитель поездки
-        if request.passenger_id != UUID(int=current_user_id):
-            if not request.trip or request.trip.driver_id != UUID(int=current_user_id):
+        if request.passenger_id != current_user_id:
+            if not request.trip or request.trip.driver_id != current_user_id:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Нет доступа к этой заявке"
@@ -234,7 +234,7 @@ async def get_request(
 
 # === Подтверждение заявки (водитель) ===
 @router.put(
-    "/{request_id}/confirm",
+    "/requests/{request_id}/confirm",
     response_model=TripRequestConfirmAPIResponse,
     responses={
         404: {"model": ErrorResponse, "description": "Заявка не найдена"},
@@ -246,7 +246,7 @@ async def get_request(
 async def confirm_request(
     request_id: UUID,
     db: DbSession,
-    current_user_id: int,
+    current_user_id: CurrentUserId,
 ):
     """
     Подтверждение заявки на бронирование.
@@ -260,7 +260,7 @@ async def confirm_request(
     try:
         request = await service.confirm_request(
             request_id=request_id,
-            driver_id=UUID(int=current_user_id),
+            driver_id=current_user_id,
         )
         await db.commit()
         return TripRequestConfirmAPIResponse(data=request)
@@ -295,7 +295,7 @@ async def reject_request(
     trip_id: UUID,
     request_id: UUID,
     db: DbSession,
-    current_user_id: int,
+    current_user_id: CurrentUserId,
     data: Optional[TripRequestRejectRequest] = None,
 ):
     """
@@ -311,7 +311,7 @@ async def reject_request(
         request = await service.reject_request(
             trip_id=trip_id,
             request_id=request_id,
-            driver_id=UUID(int=current_user_id),
+            driver_id=current_user_id,
             reason=reason,
         )
         await db.commit()
@@ -335,7 +335,7 @@ async def reject_request(
 
 # === Отмена заявки (пассажир) ===
 @router.delete(
-    "/{request_id}",
+    "/requests/{request_id}",
     response_model=TripRequestConfirmAPIResponse,
     responses={
         404: {"model": ErrorResponse, "description": "Заявка не найдена"},
@@ -346,7 +346,7 @@ async def reject_request(
 async def cancel_request(
     request_id: UUID,
     db: DbSession,
-    current_user_id: int,
+    current_user_id: CurrentUserId,
 ):
     """
     Отмена заявки на бронирование пассажиром.
@@ -359,7 +359,7 @@ async def cancel_request(
     try:
         request = await service.cancel_request(
             request_id=request_id,
-            user_id=UUID(int=current_user_id),
+            user_id=current_user_id,
         )
         await db.commit()
         return TripRequestConfirmAPIResponse(

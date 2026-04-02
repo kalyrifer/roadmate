@@ -22,7 +22,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class TokenData(BaseModel):
     """Данные токена."""
-    user_id: int | None = None
+    # В токене `sub` хранится как UUID строкой (см. AuthService).
+    user_id: str | None = None
     exp: datetime | None = None
 
 
@@ -93,7 +94,7 @@ def decode_token(token: str) -> TokenData | None:
     try:
         secret_key = settings.secret_key.get_secret_value()
         payload = jwt.decode(token, secret_key, algorithms=[settings.algorithm])
-        user_id: int = payload.get("sub")  # type: ignore
+        user_id = payload.get("sub")  # JWT: sub = str(uuid)
         if user_id is None:
             return None
         return TokenData(user_id=user_id)

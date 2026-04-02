@@ -6,6 +6,7 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
+import uuid
 
 from app.core.security import decode_token
 from app.db.session import get_db
@@ -16,7 +17,7 @@ security = HTTPBearer(auto_error=False)
 
 async def get_current_user_id(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)] = None,
-) -> int:
+) -> uuid.UUID:
     """Получение ID текущего пользователя из токена."""
     if credentials is None:
         raise HTTPException(
@@ -32,10 +33,17 @@ async def get_current_user_id(
             detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    return token_data.user_id
+
+    try:
+        return uuid.UUID(token_data.user_id)
+    except (TypeError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 # Типизированные зависимости
 DbSession = Annotated[AsyncSession, Depends(get_db)]
-CurrentUserId = Annotated[int, Depends(get_current_user_id)]
+CurrentUserId = Annotated[uuid.UUID, Depends(get_current_user_id)]
