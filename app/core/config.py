@@ -291,86 +291,108 @@ class Settings(BaseSettings):
         from app.core.config import settings
 
         # Доступ к настройкам
-        settings.database.DATABASE_URL
-        settings.security.SECRET_KEY
-        settings.app.APP_NAME
+        settings.DATABASE_URL
+        settings.SECRET_KEY
     """
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        env_nested_delimiter="__",
         case_sensitive=True,
         extra="ignore"
     )
 
-    # Вложенные настройки по категориям
-    app: AppSettings = Field(default_factory=AppSettings)
-    database: DatabaseSettings = Field(default_factory=DatabaseSettings)
-    security: SecuritySettings = Field(default_factory=SecuritySettings)
-    jwt: JWTSettings = Field(default_factory=JWTSettings)
-    cors: CORSSettings = Field(default_factory=CORSSettings)
-    files: FilesSettings = Field(default_factory=FilesSettings)
-    locale: LocalizationSettings = Field(default_factory=LocalizationSettings)
-    logging: LoggingSettings = Field(default_factory=LoggingSettings)
+    # Основные настройки приложения
+    app_name: str = Field(default="RoadMate", description="Название приложения")
+    app_version: str = Field(default="0.1.0", description="Версия приложения")
+    debug: bool = Field(default=False, description="Режим отладки")
+    environment: str = Field(default="dev", description="Окружение")
+    testing: bool = Field(default=False, description="Режим тестирования")
+
+    # База данных
+    database_url: str = Field(default="postgresql+asyncpg://postgres:postgres@localhost:5432/roadmate2", description="URL БД")
+    database_url_sync: str = Field(default="postgresql://postgres:postgres@localhost:5432/roadmate2", description="Синхронный URL БД")
+    database_echo: bool = Field(default=False, description="Логирование SQL")
+    database_pool_size: int = Field(default=20, description="Размер пула")
+    database_max_overflow: int = Field(default=10, description="Макс переполнение")
+
+    # Безопасность
+    secret_key: SecretStr = Field(default=SecretStr("CHANGE_ME_IN_PRODUCTION"), description="Секретный ключ")
+    algorithm: str = Field(default="HS256", description="Алгоритм JWT")
+    access_token_expire_minutes: int = Field(default=30, description="Время жизни токена")
+    refresh_token_expire_days: int = Field(default=7, description="Время жизни refresh токена")
+
+    # CORS
+    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000", "http://localhost:8000"], description="CORS origins")
+    cors_allow_credentials: bool = Field(default=True, description="CORS credentials")
+
+    # Файлы
+    upload_dir: str = Field(default="./uploads", description="Директория загрузок")
+    max_file_size_mb: int = Field(default=10, description="Макс размер файла")
+
+    # Локализация
+    default_language: str = Field(default="ru", description="Язык по умолчанию")
+    supported_languages: list[str] = Field(default_factory=lambda: ["ru", "en"], description="Поддерживаемые языки")
+
+    # Логирование
+    log_level: str = Field(default="INFO", description="Уровень логирования")
 
     # Прямой доступ к часто используемым параметрам (для обратной совместимости)
     @property
     def APP_NAME(self) -> str:
-        return self.app.APP_NAME
+        return self.app_name
 
     @property
     def APP_VERSION(self) -> str:
-        return self.app.APP_VERSION
+        return self.app_version
 
     @property
     def DEBUG(self) -> bool:
-        return self.app.DEBUG
+        return self.debug
 
     @property
     def ENVIRONMENT(self) -> str:
-        return self.app.ENVIRONMENT
+        return self.environment
 
     @property
     def DATABASE_URL(self) -> str:
-        return self.database.DATABASE_URL
+        return self.database_url
 
     @property
     def SECRET_KEY(self) -> SecretStr:
-        # Используем JWT настройки если доступны, иначе security
-        return self.jwt.SECRET_KEY
+        return self.secret_key
 
     @property
     def ALGORITHM(self) -> str:
-        return self.jwt.ALGORITHM
+        return self.algorithm
 
     @property
     def ACCESS_TOKEN_EXPIRE_MINUTES(self) -> int:
-        return self.jwt.ACCESS_TOKEN_EXPIRE_MINUTES
+        return self.access_token_expire_minutes
 
     @property
     def DEFAULT_LANGUAGE(self) -> str:
-        return self.locale.DEFAULT_LANGUAGE
+        return self.default_language
 
     @property
     def SUPPORTED_LANGUAGES(self) -> list[str]:
-        return self.locale.SUPPORTED_LANGUAGES
+        return self.supported_languages
 
     @property
     def CORS_ORIGINS(self) -> list[str]:
-        return self.cors.ORIGINS
+        return self.cors_origins
 
     def is_development(self) -> bool:
         """Проверка режима разработки."""
-        return self.app.ENVIRONMENT == "dev"
+        return self.environment == "dev"
 
     def is_testing(self) -> bool:
         """Проверка режима тестирования."""
-        return self.app.TESTING or self.app.ENVIRONMENT == "test"
+        return self.testing or self.environment == "test"
 
     def is_production(self) -> bool:
         """Проверка режима продакшена."""
-        return self.app.ENVIRONMENT == "prod"
+        return self.environment == "prod"
 
 
 @lru_cache

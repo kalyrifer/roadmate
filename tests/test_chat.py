@@ -102,7 +102,7 @@ class TestChatService:
              patch.object(chat_service, "_is_trip_participant", return_value=True), \
              patch.object(chat_service.repository, "get_conversation_by_trip", return_value=None), \
              patch.object(chat_service.repository, "create_conversation") as mock_create_conv, \
-             patch.object(chat_service.repository, "add_participant") as mock_add participant, \
+             patch.object(chat_service.repository, "add_participant") as mock_add_participant, \
              patch.object(chat_service.repository, "create_message") as mock_create_msg:
 
             trip = Trip(

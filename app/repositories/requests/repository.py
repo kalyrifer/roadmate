@@ -87,6 +87,24 @@ class TripRequestRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get_active_by_trip_and_passenger(self, trip_id: UUID, passenger_id: UUID) -> Optional[TripRequest]:
+        """
+        Получение активной заявки (pending или confirmed) по поездке и пассажиру.
+        Используется для проверки дубликатов перед созданием новой заявки.
+        """
+        result = await self.session.execute(
+            select(TripRequest)
+            .where(
+                and_(
+                    TripRequest.trip_id == trip_id,
+                    TripRequest.passenger_id == passenger_id,
+                    TripRequest.status.in_([TripRequestStatus.PENDING, TripRequestStatus.CONFIRMED]),
+                    TripRequest.deleted_at.is_(None)
+                )
+            )
+        )
+        return result.scalar_one_or_none()
+
     async def list_by_trip(
         self,
         trip_id: UUID,
@@ -202,6 +220,45 @@ class TripRequestRepository:
 
         request.status = TripRequestStatus.CONFIRMED
         request.confirmed_at = datetime.now(timezone.utc)
+        await self.session.flush()
+        await self.session.refresh(request)
+        return request
+
+    async def confirm_with_seats(
+        self,
+        request_id: UUID,
+        seats_to_reserve: int,
+    ) -> Optional[TripRequest]:
+        """
+        Подтверждение заявки с атомарным уменьшением мест.
+        Использует SELECT FOR UPDATE для защиты от гонок.
+        """
+        from datetime import datetime, timezone
+        from sqlalchemy import select
+        
+        # Получаем заявку с блокировкой
+        request = await self.get_by_id_for_update(request_id)
+        if not request or request.status != TripRequestStatus.PENDING:
+            return None
+        
+        # Получаем поездку с блокировкой для проверки и обновления мест
+        result = await self.session.execute(
+            select(Trip)
+            .where(Trip.id == request.trip_id)
+            .with_for_update()
+        )
+        trip = result.scalar_one_or_none()
+        
+        if not trip or trip.available_seats < seats_to_reserve:
+            return None
+        
+        # Обновляем статус заявки
+        request.status = TripRequestStatus.CONFIRMED
+        request.confirmed_at = datetime.now(timezone.utc)
+        
+        # Уменьшаем доступные места
+        trip.available_seats -= seats_to_reserve
+        
         await self.session.flush()
         await self.session.refresh(request)
         return request

@@ -102,11 +102,13 @@ class TripRequestService:
                 f"Доступно мест: {trip.available_seats}, запрошено: {data.seats_requested}"
             )
 
-        # Проверка: нет активной заявки
-        existing_request = await self.repository.get_pending_by_trip_and_passenger(
+        # Проверка: нет активной заявки (pending или confirmed)
+        existing_request = await self.repository.get_active_by_trip_and_passenger(
             trip_id, passenger_id
         )
         if existing_request:
+            if existing_request.status == TripRequestStatus.CONFIRMED:
+                raise TripRequestAlreadyExistsError("У вас уже есть подтверждённая заявка на эту поездку")
             raise TripRequestAlreadyExistsError("У вас уже есть активная заявка на эту поездку")
 
         # Создаём заявку
@@ -209,8 +211,12 @@ class TripRequestService:
         request_id: UUID,
         driver_id: UUID,
     ) -> TripRequest:
-        """Подтверждение заявки водителем."""
-        # Получаем заявку
+        """
+        Подтверждение заявки водителем.
+        
+        Использует атомарную операцию с блокировкой строк для защиты от гонок.
+        """
+        # Получаем заявку (без блокировки - для проверки прав)
         request = await self.repository.get_by_id(request_id)
         if not request:
             raise TripRequestNotFoundError("Заявка не найдена")
@@ -224,39 +230,55 @@ class TripRequestService:
         if request.status != TripRequestStatus.PENDING:
             raise TripRequestAlreadyProcessedError("Заявка уже обработана")
 
-        # Проверяем доступность мест
-        if trip.available_seats < request.seats_requested:
-            raise InsufficientSeatsError("Недостаточно доступных мест")
-
-        # Подтверждаем заявку
-        confirmed_request = await self.repository.confirm(request_id)
+        # Используем атомарную операцию с блокировкой
+        confirmed_request = await self.repository.confirm_with_seats(
+            request_id=request_id,
+            seats_to_reserve=request.seats_requested,
+        )
+        
         if not confirmed_request:
-            raise TripRequestAlreadyProcessedError("Заявка уже обработана")
-
-        # Уменьшаем доступные места (в той же транзакции)
-        trip.available_seats -= request.seats_requested
-        await self.session.flush()
+            # Проверяем причину: недостаточно мест или уже обработана
+            # Делаем повторную проверку заявки
+            check_request = await self.repository.get_by_id(request_id)
+            if check_request:
+                if check_request.status != TripRequestStatus.PENDING:
+                    raise TripRequestAlreadyProcessedError("Заявка уже обработана")
+                # Если заявка still pending, значит не хватает мест
+                raise InsufficientSeatsError("Недостаточно доступных мест")
+            raise TripRequestNotFoundError("Заявка не найдена")
 
         return confirmed_request
 
     async def reject_request(
         self,
+        trip_id: UUID,
         request_id: UUID,
         driver_id: UUID,
         reason: Optional[str] = None,
     ) -> TripRequest:
-        """Отклонение заявки водителем."""
+        """
+        Отклонение заявки водителем.
+        
+        Проверяет, что:
+        - заявка принадлежит указанной поездке
+        - водитель является владельцем поездки
+        - заявка в статусе pending
+        """
         # Получаем заявку
         request = await self.repository.get_by_id(request_id)
         if not request:
             raise TripRequestNotFoundError("Заявка не найдена")
+        
+        # Проверяем, что заявка принадлежит указанной поездке
+        if request.trip_id != trip_id:
+            raise TripRequestNotFoundError("Заявка не найдена для этой поездки")
 
         # Проверяем права: водитель должен быть владельцем поездки
         trip = request.trip
         if not trip or trip.driver_id != driver_id:
             raise ForbiddenError("Вы не являетесь водителем этой поездки")
 
-        # Проверяем статус
+        # Проверяем статус: можно отклонять только pending заявки
         if request.status != TripRequestStatus.PENDING:
             raise TripRequestAlreadyProcessedError("Заявка уже обработана")
 

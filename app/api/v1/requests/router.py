@@ -24,6 +24,13 @@ from app.schemas.requests import (
     TripRequestRead,
     TripRequestList,
     TripRequestAction,
+    TripRequestRejectRequest,
+    TripRequestCreateAPIResponse,
+    TripRequestConfirmAPIResponse,
+    TripRequestRejectAPIResponse,
+    TripRequestCancelAPIResponse,
+    TripRequestListPassenger,
+    TripRequestListDriver,
 )
 from app.services.requests.service import (
     TripRequestService,
@@ -49,7 +56,7 @@ class ErrorResponse(BaseModel):
 # === Создание заявки ===
 @router.post(
     "/trips/{trip_id}/requests",
-    response_model=TripRequestRead,
+    response_model=TripRequestCreateAPIResponse,
     status_code=status.HTTP_201_CREATED,
     responses={
         404: {"model": ErrorResponse, "description": "Поездка не найдена"},
@@ -63,7 +70,15 @@ async def create_request(
     db: DbSession,
     current_user_id: int,
 ):
-    """Создание заявки на бронирование поездки."""
+    """
+    Создание заявки на бронирование поездки.
+    
+    Пассажир отправляет запрос на конкретную поездку.
+    - Проверяется, что поездка существует и доступна для бронирования.
+    - Нельзя отправить запрос на свою собственную поездку.
+    - Проверяется наличие свободных мест.
+    - Запрещено создавать повторные заявки на ту же поездку.
+    """
     service = TripRequestService(db)
     
     try:
@@ -73,7 +88,7 @@ async def create_request(
             data=data,
         )
         await db.commit()
-        return request
+        return TripRequestCreateAPIResponse(data=request)
     except TripNotFoundError as e:
         await db.rollback()
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -85,7 +100,7 @@ async def create_request(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
     except InsufficientSeatsError as e:
         await db.rollback()
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except TripRequestAlreadyExistsError as e:
         await db.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
@@ -218,9 +233,9 @@ async def get_request(
 
 
 # === Подтверждение заявки (водитель) ===
-@router.post(
+@router.put(
     "/{request_id}/confirm",
-    response_model=TripRequestRead,
+    response_model=TripRequestConfirmAPIResponse,
     responses={
         404: {"model": ErrorResponse, "description": "Заявка не найдена"},
         403: {"model": ErrorResponse, "description": "Нет прав доступа"},
@@ -233,7 +248,13 @@ async def confirm_request(
     db: DbSession,
     current_user_id: int,
 ):
-    """Подтверждение заявки на бронирование (водителем)."""
+    """
+    Подтверждение заявки на бронирование.
+    
+    Только водитель (владелец поездки) может подтвердить заявку.
+    При подтверждении автоматически резервируются места на поездке.
+    Операция защищена от race conditions с помощью блокировки строк.
+    """
     service = TripRequestService(db)
     
     try:
@@ -242,7 +263,7 @@ async def confirm_request(
             driver_id=UUID(int=current_user_id),
         )
         await db.commit()
-        return request
+        return TripRequestConfirmAPIResponse(data=request)
     except TripRequestNotFoundError as e:
         await db.rollback()
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -251,7 +272,7 @@ async def confirm_request(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except InsufficientSeatsError as e:
         await db.rollback()
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except TripRequestAlreadyProcessedError as e:
         await db.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
@@ -261,9 +282,9 @@ async def confirm_request(
 
 
 # === Отклонение заявки (водитель) ===
-@router.post(
-    "/{request_id}/reject",
-    response_model=TripRequestRead,
+@router.put(
+    "/trips/{trip_id}/requests/{request_id}/reject",
+    response_model=TripRequestRejectAPIResponse,
     responses={
         404: {"model": ErrorResponse, "description": "Заявка не найдена"},
         403: {"model": ErrorResponse, "description": "Нет прав доступа"},
@@ -271,23 +292,33 @@ async def confirm_request(
     },
 )
 async def reject_request(
+    trip_id: UUID,
     request_id: UUID,
-    data: Optional[TripRequestAction] = None,
+    data: Optional[TripRequestRejectRequest] = None,
     db: DbSession,
     current_user_id: int,
 ):
-    """Отклонение заявки на бронирование (водителем)."""
+    """
+    Отклонение заявки на бронирование.
+    
+    Только водитель (владелец поездки) может отклонить заявку.
+    При отклонении пассажир получает уведомление.
+    """
     service = TripRequestService(db)
     
     try:
-        reason = data.rejected_reason if data else None
+        reason = data.rejection_reason if data else None
         request = await service.reject_request(
+            trip_id=trip_id,
             request_id=request_id,
             driver_id=UUID(int=current_user_id),
             reason=reason,
         )
         await db.commit()
-        return request
+        return TripRequestRejectAPIResponse(
+            data=request,
+            message="Request rejected"
+        )
     except TripRequestNotFoundError as e:
         await db.rollback()
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -305,7 +336,7 @@ async def reject_request(
 # === Отмена заявки (пассажир) ===
 @router.delete(
     "/{request_id}",
-    response_model=TripRequestRead,
+    response_model=TripRequestConfirmAPIResponse,
     responses={
         404: {"model": ErrorResponse, "description": "Заявка не найдена"},
         403: {"model": ErrorResponse, "description": "Нет прав доступа"},
@@ -317,7 +348,12 @@ async def cancel_request(
     db: DbSession,
     current_user_id: int,
 ):
-    """Отмена заявки на бронирование (пассажиром)."""
+    """
+    Отмена заявки на бронирование пассажиром.
+    
+    Только владелец заявки может отменить её.
+    Можно отменить только заявки со статусом pending.
+    """
     service = TripRequestService(db)
     
     try:
@@ -326,7 +362,10 @@ async def cancel_request(
             user_id=UUID(int=current_user_id),
         )
         await db.commit()
-        return request
+        return TripRequestConfirmAPIResponse(
+            data=request,
+            message="Request cancelled"
+        )
     except TripRequestNotFoundError as e:
         await db.rollback()
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
