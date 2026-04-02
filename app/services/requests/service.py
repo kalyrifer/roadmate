@@ -155,21 +155,26 @@ class TripRequestService:
         )
 
         # Уведомляем водителя о новой заявке
-        passenger_name = ""
-        passenger_result = await self.session.execute(
-            select(User).where(User.id == passenger_id)
-        )
-        passenger = passenger_result.scalar_one_or_none()
-        passenger_name = self._format_user_name(passenger)
+        try:
+            passenger_name = ""
+            passenger_result = await self.session.execute(
+                select(User).where(User.id == passenger_id)
+            )
+            passenger = passenger_result.scalar_one_or_none()
+            passenger_name = self._format_user_name(passenger)
 
-        await self.notifications.notify_new_request(
-            driver_id=trip.driver_id,
-            passenger_name=passenger_name,
-            trip_id=trip_id,
-            request_id=request.id,
-            from_city=trip.from_city,
-            to_city=trip.to_city,
-        )
+            await self.notifications.notify_new_request(
+                driver_id=trip.driver_id,
+                passenger_name=passenger_name,
+                trip_id=trip_id,
+                request_id=request.id,
+                from_city=trip.from_city,
+                to_city=trip.to_city,
+            )
+        except Exception as e:
+            # Логируем ошибку уведомления, но не прерываем бронирование
+            import logging
+            logging.warning(f"Failed to send notification: {e}")
 
         return request
 
