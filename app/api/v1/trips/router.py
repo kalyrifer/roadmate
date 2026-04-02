@@ -109,7 +109,10 @@ async def search_trips(
     if min_price is not None and max_price is not None and min_price > max_price:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="min_price cannot be greater than max_price"
+            detail={
+                "error": "invalid_price_range",
+                "message": "min_price cannot be greater than max_price"
+            }
         )
     
     # Создаем фильтры
@@ -195,20 +198,16 @@ async def create_trip(
     )
 
 
-@router.get("/{trip_id}", response_model=TripResponse)
+@router.get("/{trip_id}")
 async def get_trip(
     trip_id: str,
     trip_service: TripServiceDep,
-) -> TripResponse:
+):
     """
-    Получение деталей поездки.
+    Получение полных деталей поездки с информацией о водителе.
     
-    Args:
-        trip_id: ID поездки (UUID строка)
-        trip_service: Сервис для работы с поездками
-        
     Returns:
-        TripResponse: Данные поездки
+        Объект с данными поездки, водителя и отзывов
         
     Raises:
         HTTPException: 400 если неверный формат UUID
@@ -223,7 +222,7 @@ async def get_trip(
             detail="Invalid trip ID format"
         )
     
-    return await trip_service.get_trip(trip_uuid)
+    return await trip_service.get_trip_detail(trip_uuid)
 
 
 @router.put("/{trip_id}", response_model=TripResponse)

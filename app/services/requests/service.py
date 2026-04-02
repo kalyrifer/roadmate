@@ -7,11 +7,15 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.models.requests.model import TripRequest, TripRequestStatus
 from app.models.trips.model import Trip, TripStatus
 from app.repositories.requests.repository import TripRequestRepository
 from app.schemas.requests import TripRequestCreate, TripRequestList
+from app.services.notifications.service import NotificationEventService
+
+from app.models.users.model import User
 
 
 class TripRequestServiceError(Exception):
@@ -70,6 +74,37 @@ class TripRequestService:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.repository = TripRequestRepository(session)
+        self.notifications = NotificationEventService(session)
+
+    def _format_user_name(self, user: User | None) -> str:
+        if not user:
+            return ""
+        name = f"{getattr(user, 'first_name', '')} {getattr(user, 'last_name', '')}".strip()
+        return name or getattr(user, "email", "") or str(user.id)
+
+    async def _load_request_context(self, request_id: UUID) -> TripRequest:
+        """
+        Загружает заявку вместе с поездкой, водителем и пассажиром.
+        Нужно для корректного формирования уведомлений.
+        """
+        from sqlalchemy import select
+        from sqlalchemy.orm import selectinload
+
+        result = await self.session.execute(
+            select(TripRequest)
+            .options(
+                selectinload(TripRequest.trip).selectinload(Trip.driver),
+                selectinload(TripRequest.passenger),
+            )
+            .where(
+                TripRequest.id == request_id,
+                TripRequest.deleted_at.is_(None),
+            )
+        )
+        request = result.scalar_one_or_none()
+        if not request:
+            raise TripRequestNotFoundError("Заявка не найдена")
+        return request
 
     async def create_request(
         self,
@@ -117,6 +152,23 @@ class TripRequestService:
             passenger_id=passenger_id,
             seats_requested=data.seats_requested,
             message=data.message,
+        )
+
+        # Уведомляем водителя о новой заявке
+        passenger_name = ""
+        passenger_result = await self.session.execute(
+            select(User).where(User.id == passenger_id)
+        )
+        passenger = passenger_result.scalar_one_or_none()
+        passenger_name = self._format_user_name(passenger)
+
+        await self.notifications.notify_new_request(
+            driver_id=trip.driver_id,
+            passenger_name=passenger_name,
+            trip_id=trip_id,
+            request_id=request.id,
+            from_city=trip.from_city,
+            to_city=trip.to_city,
         )
 
         return request
@@ -247,6 +299,17 @@ class TripRequestService:
                 raise InsufficientSeatsError("Недостаточно доступных мест")
             raise TripRequestNotFoundError("Заявка не найдена")
 
+        # Уведомляем пассажира о подтверждении заявки
+        request_ctx = await self._load_request_context(request_id)
+        await self.notifications.notify_request_confirmed(
+            passenger_id=request_ctx.passenger_id,
+            driver_name=self._format_user_name(request_ctx.trip.driver),
+            trip_id=request_ctx.trip_id,
+            request_id=request_ctx.id,
+            from_city=request_ctx.trip.from_city,
+            to_city=request_ctx.trip.to_city,
+        )
+
         return confirmed_request
 
     async def reject_request(
@@ -287,6 +350,18 @@ class TripRequestService:
         if not rejected_request:
             raise TripRequestAlreadyProcessedError("Заявка уже обработана")
 
+        # Уведомляем пассажира о отклонении заявки
+        request_ctx = await self._load_request_context(request_id)
+        await self.notifications.notify_request_rejected(
+            passenger_id=request_ctx.passenger_id,
+            driver_name=self._format_user_name(request_ctx.trip.driver),
+            trip_id=request_ctx.trip_id,
+            request_id=request_ctx.id,
+            from_city=request_ctx.trip.from_city,
+            to_city=request_ctx.trip.to_city,
+            reason=reason,
+        )
+
         return rejected_request
 
     async def cancel_request(
@@ -312,6 +387,17 @@ class TripRequestService:
         cancelled_request = await self.repository.cancel(request_id, "passenger")
         if not cancelled_request:
             raise TripRequestAlreadyProcessedError("Заявка уже обработана")
+
+        # Уведомляем водителя об отмене заявки пассажиром
+        request_ctx = await self._load_request_context(request_id)
+        await self.notifications.notify_request_cancelled(
+            user_id=request_ctx.trip.driver_id,
+            trip_id=request_ctx.trip_id,
+            request_id=request_ctx.id,
+            from_city=request_ctx.trip.from_city,
+            to_city=request_ctx.trip.to_city,
+            cancelled_by="passenger",
+        )
 
         return cancelled_request
 
