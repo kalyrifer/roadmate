@@ -71,10 +71,15 @@ class TripRequestTripDetail(BaseModel):
     to_city: str
     departure_date: datetime
     departure_time_start: time
+    available_seats: int
     
     @field_serializer('departure_time_start')
     def serialize_time(self, value: time) -> str:
         return value.strftime('%H:%M') if value else None
+    
+    @field_serializer('departure_date')
+    def serialize_date(self, value: datetime) -> str:
+        return value.strftime('%Y-%m-%d') if value else None
 
 
 # === Краткая информация о пассажире для деталей заявки ===
