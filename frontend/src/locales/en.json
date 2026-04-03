@@ -32,7 +32,7 @@
     "logout": "Logout",
     "createTrip": "Create trip",
     "findTrips": "Find trips",
-    "offerTrip": "Offer trip"
+    "offerTrip": "Create trip"
   },
   "home": {
     "title": "Find a ride",
@@ -165,7 +165,7 @@
     "petsAllowed": "Pets",
     "descriptionLabel": "Trip description",
     "descriptionPlaceholder": "Add additional information about the trip...",
-    "createNewTrip": "Offer a trip",
+    "createNewTrip": "Create trip",
     "createTrip": "Publish",
     "successTitle": "Trip created!",
     "successMessage": "Your trip has been successfully published. Passengers will be able to send booking requests.",

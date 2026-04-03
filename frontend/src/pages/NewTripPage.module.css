@@ -95,18 +95,7 @@
   font-weight: 600;
   margin-bottom: 20px;
   color: var(--color-text-primary);
-  display: flex;
-  align-items: center;
-  gap: 10px;
   letter-spacing: -0.01em;
-}
-
-.sectionTitle::before {
-  content: '';
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary), #8b5cf6);
 }
 
 .formRow {
@@ -279,33 +268,33 @@
 }
 
 /* Route icon decoration */
-.section[data-route] .sectionTitle::before {
-  background: linear-gradient(135deg, #10b981, #059669);
+.section[data-route] .sectionTitle {
+  color: var(--color-text-primary);
 }
 
 /* Schedule icon decoration */
-.section[data-schedule] .sectionTitle::before {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
+.section[data-schedule] .sectionTitle {
+  color: var(--color-text-primary);
 }
 
 /* Price icon decoration */
-.section[data-price] .sectionTitle::before {
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+.section[data-price] .sectionTitle {
+  color: var(--color-text-primary);
 }
 
 /* Car icon decoration */
-.section[data-car] .sectionTitle::before {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+.section[data-car] .sectionTitle {
+  color: var(--color-text-primary);
 }
 
 /* Preferences icon decoration */
-.section[data-preferences] .sectionTitle::before {
-  background: linear-gradient(135deg, #ec4899, #db2777);
+.section[data-preferences] .sectionTitle {
+  color: var(--color-text-primary);
 }
 
 /* Description icon decoration */
-.section[data-description] .sectionTitle::before {
-  background: linear-gradient(135deg, #14b8a6, #0d9488);
+.section[data-description] .sectionTitle {
+  color: var(--color-text-primary);
 }
 
 /* Success Modal Styles */
