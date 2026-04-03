@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Card, Input, Skeleton } from '../components/ui';
 import { tripsApi } from '../services/api/trips';
+import { useAuthStore } from '../stores/auth';
 import type { Trip } from '../types';
 import styles from './TripsPage.module.css';
 
@@ -16,6 +17,7 @@ interface SearchParams {
 export default function TripsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const currentUser = useAuthStore((state) => state.user);
   const [searchParams, setSearchParams] = useState<SearchParams>({});
 
   const { data: tripsData, isLoading, error } = useQuery({
@@ -98,6 +100,12 @@ export default function TripsPage() {
           {tripsData?.total ? `${tripsData.total} ${t('trips.found')}` : t('trips.noResults')}
         </h2>
 
+        {!isLoading && trips.length > 0 && trips.filter((t: Trip) => !currentUser || t.driver_id !== currentUser.id).length === 0 && (
+          <div className={styles.noResults}>
+            {t('trips.noTripsYet')}
+          </div>
+        )}
+
         {isLoading && (
           <div className={styles.tripsList}>
             {[1, 2, 3].map((i) => (
@@ -127,7 +135,9 @@ export default function TripsPage() {
 
         {trips && trips.length > 0 && (
           <div className={styles.tripsList}>
-            {trips.map((trip: Trip) => (
+            {trips
+              .filter((trip: Trip) => !currentUser || trip.driver_id !== currentUser.id)
+              .map((trip: Trip) => (
               <Card 
                 key={trip.id} 
                 className={styles.tripCard}

@@ -225,8 +225,12 @@ export default function TripPage() {
         <div className={styles.driver}>
           <h3>{t('trips.driver')}</h3>
           <div className={styles.driverInfo}>
-            {trip.driver?.avatar_url && (
+            {trip.driver?.avatar_url ? (
               <img src={trip.driver.avatar_url} alt="" className={styles.driverAvatar} />
+            ) : (
+              <div className={styles.driverAvatarPlaceholder}>
+                {driverName.charAt(0).toUpperCase()}
+              </div>
             )}
             <div>
               <div className={styles.driverName}>
