@@ -158,6 +158,20 @@ class NotificationRepository:
 
         return count
 
+    async def delete(
+        self,
+        notification_id: UUID,
+        user_id: UUID,
+    ) -> bool:
+        """Удаление уведомления по ID для конкретного пользователя."""
+        notification = await self.get_by_id_for_user(notification_id, user_id)
+        if not notification:
+            return False
+
+        await self.session.delete(notification)
+        await self.session.flush()
+        return True
+
     async def delete_old_notifications(self, days: int = 90) -> int:
         """Удаление старых прочитанных уведомлений (для очистки)."""
         from datetime import datetime, timedelta, timezone

@@ -99,3 +99,29 @@ async def get_unread_count(
     count = await service.get_unread_count(user_id=current_user_id)
     
     return {"unread_count": count}
+
+
+@router.delete("/{notification_id}")
+async def delete_notification(
+    notification_id: UUID,
+    db: DbSession,
+    current_user_id: CurrentUserId,
+) -> dict[str, str]:
+    """
+    Удаление уведомления.
+    
+    Только владелец уведомления может удалить его.
+    """
+    service = NotificationService(db)
+    deleted = await service.delete(
+        notification_id=notification_id,
+        user_id=current_user_id,
+    )
+    
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Уведомление не найдено",
+        )
+    
+    return {"message": "Уведомление удалено"}

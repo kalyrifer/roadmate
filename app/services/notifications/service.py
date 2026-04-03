@@ -108,6 +108,14 @@ class NotificationService:
         """Получение количества непрочитанных уведомлений."""
         return await self.repository.get_unread_count(user_id)
 
+    async def delete(
+        self,
+        notification_id: UUID,
+        user_id: UUID,
+    ) -> bool:
+        """Удаление уведомления."""
+        return await self.repository.delete(notification_id, user_id)
+
 
 class NotificationEventService:
     """Service для создания уведомлений по событиям домена."""
