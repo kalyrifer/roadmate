@@ -92,6 +92,9 @@ class TripRequestRepository:
         Получение активной заявки (pending или confirmed) по поездке и пассажиру.
         Используется для проверки дубликатов перед созданием новой заявки.
         """
+        from sqlalchemy import and_, text
+        
+        # Используем text() для явного приведения типов
         result = await self.session.execute(
             select(TripRequest)
             .where(

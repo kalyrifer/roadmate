@@ -95,7 +95,12 @@ class Review(Base):
 
     # === Статус ===
     status: Mapped[ReviewStatus] = mapped_column(
-        Enum(ReviewStatus),
+        Enum(
+            ReviewStatus,
+            name="review_status",
+            native_enum=False,  # Используем VARCHAR вместо PostgreSQL enum
+            values_callable=lambda x: [e.value for e in x],  # Приводим к lowercase
+        ),
         nullable=False,
         default=ReviewStatus.PENDING,
         index=True,

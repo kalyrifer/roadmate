@@ -2,12 +2,15 @@
 Service слой для работы с заявками на бронирование (TripRequest).
 Содержит бизнес-логику и проверки.
 """
+import logging
 from typing import Optional
 from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+
+logger = logging.getLogger(__name__)
 
 from app.models.requests.model import TripRequest, TripRequestStatus
 from app.models.trips.model import Trip, TripStatus
@@ -113,49 +116,67 @@ class TripRequestService:
         data: TripRequestCreate,
     ) -> TripRequest:
         """Создание заявки на бронирование."""
+        logger.info(f"Creating request: trip_id={trip_id}, passenger_id={passenger_id}, seats={data.seats_requested}")
+        
         # Получаем поездку
         from sqlalchemy import select
         result = await self.session.execute(
             select(Trip).where(Trip.id == trip_id)
         )
         trip = result.scalar_one_or_none()
-
+        
+        logger.info(f"Trip lookup result: {trip is not None}")
+        
         if not trip:
+            logger.warning(f"Trip not found: {trip_id}")
             raise TripNotFoundError("Поездка не найдена")
 
         # Проверка: поездка доступна для бронирования
+        logger.info(f"Trip status check: {trip.status}, available_seats: {trip.available_seats}")
+        
         if trip.status not in [TripStatus.PUBLISHED, TripStatus.ACTIVE]:
+            logger.warning(f"Trip not available for booking: {trip.status}")
             raise TripNotAvailableError("Поездка недоступна для бронирования")
 
         # Проверка: пассажир не является водителем
+        logger.info(f"Driver check: trip.driver_id={trip.driver_id}, passenger_id={passenger_id}")
         if trip.driver_id == passenger_id:
+            logger.warning("Passenger is the driver of this trip")
             raise CannotBookOwnTripError("Нельзя подать заявку на свою поездку")
 
         # Проверка: достаточно мест
+        logger.info(f"Seats check: available={trip.available_seats}, requested={data.seats_requested}")
         if trip.available_seats < data.seats_requested:
             raise InsufficientSeatsError(
                 f"Доступно мест: {trip.available_seats}, запрошено: {data.seats_requested}"
             )
 
         # Проверка: нет активной заявки (pending или confirmed)
+        logger.info("Checking for existing active requests...")
         existing_request = await self.repository.get_active_by_trip_and_passenger(
             trip_id, passenger_id
         )
         if existing_request:
+            logger.warning(f"Existing request found: {existing_request.id}, status={existing_request.status}")
             if existing_request.status == TripRequestStatus.CONFIRMED:
                 raise TripRequestAlreadyExistsError("У вас уже есть подтверждённая заявка на эту поездку")
             raise TripRequestAlreadyExistsError("У вас уже есть активная заявка на эту поездку")
 
+        logger.info("All checks passed, creating request...")
+
         # Создаём заявку
+        logger.info("Calling repository.create...")
         request = await self.repository.create(
             trip_id=trip_id,
             passenger_id=passenger_id,
             seats_requested=data.seats_requested,
             message=data.message,
         )
+        logger.info(f"Request created successfully: {request.id}")
 
         # Уведомляем водителя о новой заявке
         try:
+            logger.info("Sending notification to driver...")
             passenger_name = ""
             passenger_result = await self.session.execute(
                 select(User).where(User.id == passenger_id)
@@ -171,10 +192,10 @@ class TripRequestService:
                 from_city=trip.from_city,
                 to_city=trip.to_city,
             )
+            logger.info("Notification sent successfully")
         except Exception as e:
             # Логируем ошибку уведомления, но не прерываем бронирование
-            import logging
-            logging.warning(f"Failed to send notification: {e}")
+            logger.warning(f"Failed to send notification: {e}", exc_info=True)
 
         return request
 

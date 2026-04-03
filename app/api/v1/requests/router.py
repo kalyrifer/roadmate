@@ -105,6 +105,14 @@ async def create_request(
         await db.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
+        # Print full traceback for debugging in PyCharm
+        import traceback
+        print(f"\n=== DEBUG: Error in create_request ===")
+        print(f"Error type: {type(e).__name__}")
+        print(f"Error message: {e}")
+        print("Traceback:")
+        traceback.print_exc()
+        print("=== END DEBUG ===\n")
         await db.rollback()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
