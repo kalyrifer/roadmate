@@ -6,6 +6,7 @@ from uuid import UUID
 
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from app.models.requests.model import TripRequest, TripRequestStatus
 from app.models.trips.model import Trip
@@ -35,6 +36,10 @@ class TripRequestRepository:
         """Получение заявки по ID."""
         result = await self.session.execute(
             select(TripRequest)
+            .options(
+                joinedload(TripRequest.trip),
+                joinedload(TripRequest.passenger)
+            )
             .where(
                 and_(
                     TripRequest.id == request_id,

@@ -22,6 +22,7 @@ from app.models.requests.model import TripRequestStatus
 from app.schemas.requests import (
     TripRequestCreate,
     TripRequestRead,
+    TripRequestFull,
     TripRequestList,
     TripRequestAction,
     TripRequestRejectRequest,
@@ -207,7 +208,7 @@ async def get_driver_requests(
 # === Получение одной заявки ===
 @router.get(
     "/requests/{request_id}",
-    response_model=TripRequestRead,
+    response_model=TripRequestFull,
     responses={
         404: {"model": ErrorResponse, "description": "Заявка не найдена"},
     },

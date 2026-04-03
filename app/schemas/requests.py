@@ -4,8 +4,9 @@ Pydantic схемы для заявок на бронирование (TripReque
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
+from datetime import datetime, time
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
 
 from app.models.requests.model import TripRequestStatus
 
@@ -58,6 +59,41 @@ class TripRequestRead(TripRequestBase):
     cancelled_by: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+
+
+# === Краткая информация о поездке для деталей заявки ===
+class TripRequestTripDetail(BaseModel):
+    """Краткая информация о поездке для деталей заявки."""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: UUID
+    from_city: str
+    to_city: str
+    departure_date: datetime
+    departure_time_start: time
+    
+    @field_serializer('departure_time_start')
+    def serialize_time(self, value: time) -> str:
+        return value.strftime('%H:%M') if value else None
+
+
+# === Краткая информация о пассажире для деталей заявки ===
+class TripRequestPassengerDetail(BaseModel):
+    """Краткая информация о пассажире для деталей заявки."""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: UUID
+    first_name: str
+    last_name: str
+    rating_average: Optional[float] = None
+    rating_count: Optional[int] = None
+
+
+# === Полная схема заявки с связанными данными ===
+class TripRequestFull(TripRequestRead):
+    """Полная схема заявки с связанными данными."""
+    trip: Optional[TripRequestTripDetail] = None
+    passenger: Optional[TripRequestPassengerDetail] = None
 
 
 # === Краткая информация о поездке для списка заявок пассажира ===
