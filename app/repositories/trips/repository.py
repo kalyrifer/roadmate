@@ -330,6 +330,14 @@ class TripRepository:
                 func.lower(Trip.to_city).like(f"%{filters.to_city.lower()}%")
             )
         
+        # Фильтры по дате
+        if filters.date is not None:
+            conditions.append(Trip.departure_date == filters.date)
+        if filters.date_from is not None:
+            conditions.append(Trip.departure_date >= filters.date_from)
+        if filters.date_to is not None:
+            conditions.append(Trip.departure_date <= filters.date_to)
+        
         # Фильтры по цене
         if filters.min_price is not None:
             conditions.append(Trip.price_per_seat >= filters.min_price)

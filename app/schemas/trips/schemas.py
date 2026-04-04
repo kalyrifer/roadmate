@@ -3,8 +3,8 @@
 
 Содержит схемы для создания, обновления и отображения поездок.
 """
-from datetime import date, time
-from typing import Any
+from datetime import date, date as date_type, time
+from typing import Any, Optional
 
 from pydantic import (
     BaseModel,
@@ -32,6 +32,11 @@ class TripSearchFilters(BaseModel):
     # Базовый поиск по городам (case-insensitive, partial)
     from_city: str | None = Field(None, description="Город отправления (частичный поиск)")
     to_city: str | None = Field(None, description="Город назначения (частичный поиск)")
+    
+    # Фильтры по дате
+    date: Optional[date_type] = Field(None, description="Дата поездки (точное совпадение)")
+    date_from: Optional[date_type] = Field(None, description="Дата поездки (начало диапазона)")
+    date_to: Optional[date_type] = Field(None, description="Дата поездки (конец диапазона)")
     
     # Фильтры по цене
     min_price: float | None = Field(None, ge=0, description="Минимальная цена за место")

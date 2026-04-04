@@ -4,22 +4,16 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Card, Input, Skeleton } from '../components/ui';
 import CityMapPicker from '../components/CityMapPicker';
-import { tripsApi } from '../services/api/trips';
+import { tripsApi, TripSearchParams } from '../services/api/trips';
 import { useAuthStore } from '../stores/auth';
 import type { Trip } from '../types';
 import styles from './TripsPage.module.css';
-
-interface SearchParams {
-  from_city?: string;
-  to_city?: string;
-  date?: string;
-}
 
 export default function TripsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const currentUser = useAuthStore((state) => state.user);
-  const [searchParams, setSearchParams] = useState<SearchParams>({});
+  const [searchParams, setSearchParams] = useState<TripSearchParams>({});
   const [fromCityInput, setFromCityInput] = useState(searchParams.from_city || '');
   const [toCityInput, setToCityInput] = useState(searchParams.to_city || '');
 
@@ -33,10 +27,11 @@ export default function TripsPage() {
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+    const dateValue = formData.get('date') as string;
     setSearchParams({
       from_city: fromCityInput || formData.get('from') as string || undefined,
       to_city: toCityInput || formData.get('to') as string || undefined,
-      date: formData.get('date') as string || undefined,
+      date: dateValue || undefined,
     });
   };
 

@@ -9,7 +9,7 @@
 - DELETE /{trip_id} — отмена поездки
 """
 import uuid
-from datetime import time
+from datetime import date, time
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -74,6 +74,10 @@ async def search_trips(
     # Базовый поиск по городам
     from_city: str | None = Query(None, description="Город отправления (частичный поиск)"),
     to_city: str | None = Query(None, description="Город назначения (частичный поиск)"),
+    # Фильтры по дате
+    date: date | None = Query(None, description="Дата поездки (точное совпадение)"),
+    date_from: date | None = Query(None, description="Дата поездки (начало диапазона)"),
+    date_to: date | None = Query(None, description="Дата поездки (конец диапазона)"),
     # Фильтры по цене
     min_price: float | None = Query(None, ge=0, description="Минимальная цена за место"),
     max_price: float | None = Query(None, ge=0, description="Максимальная цена за место"),
@@ -119,6 +123,9 @@ async def search_trips(
     filters = TripSearchFilters(
         from_city=from_city,
         to_city=to_city,
+        date=date,
+        date_from=date_from,
+        date_to=date_to,
         min_price=min_price,
         max_price=max_price,
         departure_time_start=departure_time_start,
