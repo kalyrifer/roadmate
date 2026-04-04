@@ -145,7 +145,7 @@ export function Layout({ children }: LayoutProps) {
       {/* Footer */}
       <footer className={styles.footer}>
         <div className={styles.footerContent}>
-          <p>&copy; 2024 RoadMate. {t('footer.copyright')}</p>
+          <p>&copy; {new Date().getFullYear()}</p>
         </div>
       </footer>
     </div>

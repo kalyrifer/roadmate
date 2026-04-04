@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Card, Input, Skeleton } from '../components/ui';
+import CityMapPicker from '../components/CityMapPicker';
 import { tripsApi } from '../services/api/trips';
 import { useAuthStore } from '../stores/auth';
 import type { Trip } from '../types';
@@ -19,6 +20,8 @@ export default function TripsPage() {
   const navigate = useNavigate();
   const currentUser = useAuthStore((state) => state.user);
   const [searchParams, setSearchParams] = useState<SearchParams>({});
+  const [fromCityInput, setFromCityInput] = useState(searchParams.from_city || '');
+  const [toCityInput, setToCityInput] = useState(searchParams.to_city || '');
 
   const { data: tripsData, isLoading, error } = useQuery({
     queryKey: ['trips', searchParams],
@@ -31,10 +34,20 @@ export default function TripsPage() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     setSearchParams({
-      from_city: formData.get('from') as string || undefined,
-      to_city: formData.get('to') as string || undefined,
+      from_city: fromCityInput || formData.get('from') as string || undefined,
+      to_city: toCityInput || formData.get('to') as string || undefined,
       date: formData.get('date') as string || undefined,
     });
+  };
+
+  const handleFromCityChange = (city: string) => {
+    setFromCityInput(city);
+    setSearchParams(prev => ({ ...prev, from_city: city || undefined }));
+  };
+
+  const handleToCityChange = (city: string) => {
+    setToCityInput(city);
+    setSearchParams(prev => ({ ...prev, to_city: city || undefined }));
   };
 
   const formatDate = (dateString: string) => {
@@ -67,20 +80,14 @@ export default function TripsPage() {
     <div className={styles.container}>
       <div className={styles.searchSection}>
         <Card className={styles.searchCard}>
+          <CityMapPicker
+            fromCity={fromCityInput}
+            toCity={toCityInput}
+            onFromCityChange={handleFromCityChange}
+            onToCityChange={handleToCityChange}
+          />
           <form onSubmit={handleSearch} className={styles.searchForm}>
             <div className={styles.searchInputs}>
-              <Input
-                name="from"
-                label={t('trips.from')}
-                placeholder={t('trips.fromPlaceholder')}
-                defaultValue={searchParams.from_city}
-              />
-              <Input
-                name="to"
-                label={t('trips.to')}
-                placeholder={t('trips.toPlaceholder')}
-                defaultValue={searchParams.to_city}
-              />
               <Input
                 name="date"
                 type="date"
