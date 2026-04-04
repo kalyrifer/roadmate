@@ -3,11 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Button, Input, Card } from '../components/ui';
 import { usersApi, getAccessToken } from '../services/api';
+import { useAuthStore } from '../stores/auth';
 import type { UserProfile } from '../types';
 import styles from './ProfilePage.module.css';
 
 export default function ProfilePage() {
   const { t } = useTranslation();
+  const { logout } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -320,6 +322,18 @@ export default function ProfilePage() {
               </div>
             </div>
           )}
+
+          {/* Logout button at bottom right */}
+          <div className={styles.logoutContainer}>
+            <button className={styles.logoutButton} onClick={() => logout()}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              {t('profile.logout')}
+            </button>
+          </div>
         </div>
       </div>
     </div>

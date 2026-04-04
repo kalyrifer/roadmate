@@ -242,7 +242,8 @@
     "memberSince": "Member since",
     "updateSuccess": "Profile updated successfully",
     "loadError": "Failed to load profile",
-    "notFound": "Profile not found"
+    "notFound": "Profile not found",
+    "logout": "Log out"
   },
   "errors": {
     "networkError": "Network error. Check your connection.",

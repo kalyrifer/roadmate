@@ -420,6 +420,40 @@
   font-size: var(--font-size-sm);
 }
 
+.logoutContainer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--gray-100);
+}
+
+.logoutButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: transparent;
+  color: var(--error);
+  border: 1px solid var(--error);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.logoutButton:hover {
+  background: var(--error);
+  color: var(--white);
+  transform: translateY(-1px);
+}
+
+.logoutButton svg {
+  width: 16px;
+  height: 16px;
+}
+
 @media (max-width: 640px) {
   .container {
     padding: 16px;
