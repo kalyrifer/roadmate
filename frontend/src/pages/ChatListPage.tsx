@@ -61,14 +61,16 @@ export default function ChatListPage() {
       const otherParticipant = conv.participants?.find((p) => p.user_id !== userId);
       const otherUser = otherParticipant?.user;
       
-      // First try trip name if available
-      const tripName = conv.trip?.from_city && conv.trip?.to_city
-        ? `${conv.trip.from_city} → ${conv.trip.to_city}`
+      // First try other participant's name
+      const otherFirstName = otherUser?.first_name || '';
+      const otherLastName = otherUser?.last_name || '';
+      const otherName = otherFirstName || otherLastName
+        ? `${otherFirstName} ${otherLastName}`.trim()
         : null;
       
-      // Then try other participant's name
-      const otherName = otherUser?.first_name && otherUser?.last_name
-        ? `${otherUser.first_name} ${otherUser.last_name}`
+      // Then try trip name if available
+      const tripName = conv.trip?.from_city && conv.trip?.to_city
+        ? `${conv.trip.from_city} → ${conv.trip.to_city}`
         : null;
 
       return {
@@ -185,7 +187,7 @@ export default function ChatListPage() {
                 </div>
                 
                 <div className={styles.lastMessage}>
-                  {conv.last_message?.content || t('chat.noMessages')}
+                  {conv.last_message?.content || conv.last_message_at ? t('chat.noMessages') : ''}
                 </div>
               </div>
             </Card>

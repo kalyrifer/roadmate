@@ -78,8 +78,10 @@ export default function ChatPage() {
 
   const otherParticipant = conversation?.participants?.find((p) => p.user_id !== userId);
   
-  const otherName = otherParticipant?.user?.first_name && otherParticipant?.user?.last_name
-    ? `${otherParticipant.user.first_name} ${otherParticipant.user.last_name}`
+  const otherFirstName = otherParticipant?.user?.first_name || '';
+  const otherLastName = otherParticipant?.user?.last_name || '';
+  const otherName = otherFirstName || otherLastName
+    ? `${otherFirstName} ${otherLastName}`.trim()
     : null;
   
   const tripName = conversation?.trip?.from_city && conversation?.trip?.to_city
