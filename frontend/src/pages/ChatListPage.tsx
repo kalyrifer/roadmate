@@ -70,12 +70,12 @@ export default function ChatListPage() {
       const otherName = otherUser?.first_name && otherUser?.last_name
         ? `${otherUser.first_name} ${otherUser.last_name}`
         : null;
-      
+
       return {
         ...conv,
         otherUser: {
           id: (otherUser?.id || otherParticipant?.user_id) || '',
-          name: tripName || otherName || 'Unknown',
+          name: otherName || tripName || 'Unknown',
           avatar_url: otherUser?.avatar_url,
         },
       };

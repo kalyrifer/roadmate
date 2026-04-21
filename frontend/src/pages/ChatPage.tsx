@@ -78,18 +78,15 @@ export default function ChatPage() {
 
   const otherParticipant = conversation?.participants?.find((p) => p.user_id !== userId);
   
-  // First try to show trip name if available
-  const tripName = conversation?.trip?.from_city && conversation?.trip?.to_city
-    ? `${conversation.trip.from_city} → ${conversation.trip.to_city}`
-    : null;
-  
-  // Then try other participant's name
   const otherName = otherParticipant?.user?.first_name && otherParticipant?.user?.last_name
     ? `${otherParticipant.user.first_name} ${otherParticipant.user.last_name}`
     : null;
   
-  // Fallback to trip name or participant name or generic
-  const displayName = tripName || otherName || 'Chat';
+  const tripName = conversation?.trip?.from_city && conversation?.trip?.to_city
+    ? `${conversation.trip.from_city} → ${conversation.trip.to_city}`
+    : null;
+  
+  const displayName = otherName || tripName || 'Chat';
 
   return (
     <div className={styles.container}>
