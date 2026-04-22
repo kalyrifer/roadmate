@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Card, Input, Skeleton } from '../components/ui';
 import CityMapPicker from '../components/CityMapPicker';
 import { tripsApi, TripSearchParams } from '../services/api/trips';
+import { requestsApi } from '../services/api/requests';
 import { useAuthStore } from '../stores/auth';
 import type { Trip } from '../types';
 import styles from './TripsPage.module.css';
@@ -20,9 +21,25 @@ export default function TripsPage() {
   const { data: tripsData, isLoading, error } = useQuery({
     queryKey: ['trips', searchParams],
     queryFn: () => tripsApi.search(searchParams),
+    enabled: true,
+  });
+
+  const { data: userRequests } = useQuery({
+    queryKey: ['my-requests', 'active'],
+    queryFn: () => requestsApi.getMyRequests(),
+    enabled: !!currentUser,
   });
 
   const trips = tripsData?.items || [];
+
+  const userTripIds = useMemo(() => {
+    if (!userRequests) return new Set<string>();
+    return new Set(
+      userRequests
+        .filter(req => req.status === 'pending' || req.status === 'confirmed')
+        .map(req => req.trip_id)
+    );
+  }, [userRequests]);
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -71,6 +88,13 @@ export default function TripsPage() {
     return trip.driver?.rating ?? trip.driver?.rating_average;
   };
 
+  const filteredTrips = trips.filter((trip: Trip) => {
+    if (!currentUser) return trip.driver_id !== currentUser?.id;
+    if (trip.driver_id === currentUser.id) return false;
+    if (userTripIds.has(trip.id)) return false;
+    return true;
+  });
+
   return (
     <div className={styles.container}>
       <div className={styles.searchSection}>
@@ -99,12 +123,12 @@ export default function TripsPage() {
 
       <div className={styles.resultsSection}>
         <h2 className={styles.resultsTitle}>
-          {tripsData?.total ? `${tripsData.total} ${t('trips.found')}` : t('trips.noResults')}
+          {filteredTrips.length > 0 ? `${filteredTrips.length} ${t('trips.found')}` : t('trips.noResults')}
         </h2>
 
-        {!isLoading && trips.length > 0 && trips.filter((t: Trip) => !currentUser || t.driver_id !== currentUser.id).length === 0 && (
-          <div className={styles.noResults}>
-            {t('trips.noTripsYet')}
+        {error && (
+          <div className={styles.error}>
+            {t('errors.loadTrips')}
           </div>
         )}
 
@@ -129,17 +153,15 @@ export default function TripsPage() {
           </div>
         )}
 
-        {error && (
-          <div className={styles.error}>
-            {t('errors.loadTrips')}
+        {!isLoading && filteredTrips.length === 0 && (
+          <div className={styles.noResults}>
+            {t('trips.noTripsYet')}
           </div>
         )}
 
-        {trips && trips.length > 0 && (
+        {!isLoading && filteredTrips.length > 0 && (
           <div className={styles.tripsList}>
-            {trips
-              .filter((trip: Trip) => !currentUser || trip.driver_id !== currentUser.id)
-              .map((trip: Trip) => (
+            {filteredTrips.map((trip: Trip) => (
               <Card 
                 key={trip.id} 
                 className={styles.tripCard}

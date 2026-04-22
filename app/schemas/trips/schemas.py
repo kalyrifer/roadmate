@@ -54,6 +54,9 @@ class TripSearchFilters(BaseModel):
     luggage_allowed: bool | None = Field(None, description="Разрешен ли багаж")
     pets_allowed: bool | None = Field(None, description="Разрешены ли животные")
     
+    # Исключение поездок (на которые уже поданы заявки)
+    exclude_trip_ids: list[str] | None = Field(None, description="ID поездок для исключения из поиска")
+    
     # Сортировка
     sort_by: str = Field("departure_time", description="Поле для сортировки")
     sort_order: str = Field("asc", description="Направление сортировки")

@@ -303,3 +303,27 @@ class TripRequestRepository:
         await self.session.flush()
         await self.session.refresh(request)
         return request
+
+    async def get_active_trip_ids_by_passenger(self, passenger_id: UUID) -> list[UUID]:
+        """
+        Получение списка ID поездок, на которые пассажир подал активные заявки.
+        
+        Returns:
+            list[UUID]: Список ID поездок с активными заявками
+        """
+        result = await self.session.execute(
+            select(TripRequest.trip_id)
+            .where(
+                and_(
+                    TripRequest.passenger_id == passenger_id,
+                    or_(
+                        TripRequest.status == TripRequestStatus.PENDING,
+                        TripRequest.status == TripRequestStatus.CONFIRMED
+                    ),
+                    TripRequest.deleted_at.is_(None)
+                )
+            )
+        )
+        trip_ids = list(result.scalars().all())
+        print(f"[DEBUG] get_active_trip_ids_by_passenger({passenger_id}): found {len(trip_ids)} trip IDs")
+        return trip_ids

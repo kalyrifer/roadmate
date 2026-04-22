@@ -381,6 +381,20 @@ class TripRepository:
         if filters.pets_allowed is not None:
             conditions.append(Trip.pets_allowed == filters.pets_allowed)
         
+        # Исключение поездок, на которые уже поданы заявки
+        if filters.exclude_trip_ids:
+            from uuid import UUID
+            exclude_ids = []
+            for tid in filters.exclude_trip_ids:
+                try:
+                    exclude_ids.append(UUID(tid))
+                except ValueError:
+                    pass
+            print(f"[DEBUG] exclude_trip_ids from filter: {filters.exclude_trip_ids}")
+            print(f"[DEBUG] Parsed exclude_ids: {[str(e) for e in exclude_ids]}")
+            if exclude_ids:
+                conditions.append(Trip.id.not_in(exclude_ids))
+        
         # Построение запроса с JOIN для фильтрации по рейтингу
         # Подсчет общего количества
         count_stmt = (

@@ -10,14 +10,15 @@
 """
 import uuid
 from datetime import date, time
-from typing import Annotated, Any
+from typing import Annotated, Any, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.core.dependencies import CurrentUser, get_current_user
+from app.core.dependencies import CurrentUser, CurrentUserOptional, get_current_user, get_current_user_optional
 from app.models.users.model import User
+from app.repositories.requests.repository import TripRequestRepository
 from app.schemas.trips.schemas import (
     TripCreateRequest,
     TripUpdateRequest,
@@ -48,6 +49,21 @@ async def get_trip_repository(
     return TripRepository(db)
 
 
+async def get_request_repository(
+    db: Annotated[AsyncSession, Depends(get_db)]
+) -> TripRequestRepository:
+    """
+    Получение repository для работы с заявками на поездки.
+    
+    Args:
+        db: Сессия БД
+        
+    Returns:
+        TripRequestRepository: Экземпляр repository
+    """
+    return TripRequestRepository(db)
+
+
 async def get_trip_service(
     trip_repository: TripRepository = Depends(get_trip_repository),
     db: AsyncSession = Depends(get_db)
@@ -68,11 +84,15 @@ async def get_trip_service(
 # Типы для зависимостей
 TripServiceDep = Annotated[TripService, Depends(get_trip_service)]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
+RequestRepoDep = Annotated[TripRequestRepository, Depends(get_request_repository)]
+CurrentUserOptDep = Annotated[Union[User, None], Depends(get_current_user_optional)]
 
 
 @router.get("/", response_model=PaginatedTripSearchResponse)
 async def search_trips(
+    current_user: CurrentUserOptDep,
     trip_service: TripServiceDep,
+    request_repo: RequestRepoDep,
     # Базовый поиск по городам
     from_city: str | None = Query(None, description="Город отправления (частичный поиск)"),
     to_city: str | None = Query(None, description="Город назначения (частичный поиск)"),
@@ -110,6 +130,7 @@ async def search_trips(
     - Пагинация
     
     Возвращает только поездки со статусом 'published' или 'active'.
+    Исключает поездки, на которые текущий пользователь уже подал заявку.
     """
     # Валидация: min_price не может быть больше max_price
     if min_price is not None and max_price is not None and min_price > max_price:
@@ -120,6 +141,18 @@ async def search_trips(
                 "message": "min_price cannot be greater than max_price"
             }
         )
+    
+    # Получаем ID поездок, на которые пользователь уже подал заявку
+    exclude_trip_ids = None
+    print(f"[DEBUG search_trips] current_user is None: {current_user is None}")
+    if current_user:
+        active_trip_ids = await request_repo.get_active_trip_ids_by_passenger(current_user.id)
+        print(f"[DEBUG search_trips] User {current_user.id} has {len(active_trip_ids)} active trips")
+        if active_trip_ids:
+            exclude_trip_ids = [str(tid) for tid in active_trip_ids]
+            print(f"[DEBUG search_trips] Will exclude: {exclude_trip_ids}")
+    else:
+        print("[DEBUG search_trips] No current user - will not exclude any trips")
     
     # Создаем фильтры
     filters = TripSearchFilters(
@@ -140,6 +173,7 @@ async def search_trips(
         sort_order=sort_order,
         page=page,
         page_size=page_size,
+        exclude_trip_ids=exclude_trip_ids,
     )
     
     return await trip_service.search_trips(filters)

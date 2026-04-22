@@ -6,9 +6,11 @@ Dependencies для FastAPI.
 - Получения администратора
 - Проверки аутентификации
 """
+from __future__ import annotations
+
 import logging
 import uuid
-from typing import Annotated
+from typing import Annotated, Optional, Union
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -138,34 +140,41 @@ CurrentAdmin = Annotated[User, Depends(get_current_admin)]
 
 
 async def get_current_user_optional(
-    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)] | None = None,
-    db: Annotated[AsyncSession, Depends(get_db)] | None = None,
-) -> User | None:
+    credentials: Annotated[Union[HTTPAuthorizationCredentials, None], Depends(security)] = None,
+    db: Annotated[AsyncSession, Depends(get_db)] = None,
+) -> Optional[User]:
     """
     Dependency для получения текущего пользователя (опционально).
     
     Если токен не предоставлен или недействителен, возвращает None.
     """
     if not credentials or not db:
+        print("[DEBUG get_current_user_optional] No credentials or db")
         return None
     
     token = credentials.credentials
+    print(f"[DEBUG get_current_user_optional] Token received: {token[:50] if token else 'None'}...")
+    
     payload = decode_access_token(token)
     if not payload:
+        print("[DEBUG get_current_user_optional] Invalid token payload")
         return None
     
     user_id = payload.get("sub")
     if not user_id:
+        print("[DEBUG get_current_user_optional] No user_id in payload")
         return None
     
     try:
         user_uuid = uuid.UUID(user_id)
     except ValueError:
+        print("[DEBUG get_current_user_optional] Invalid UUID in user_id")
         return None
     
     user_repo = UserRepository(db)
     user = await user_repo.get_by_id(user_uuid)
+    print(f"[DEBUG get_current_user_optional] User found: {user.id if user else 'None'}")
     return user
 
 
-CurrentUserOptional = Annotated[User | None, Depends(get_current_user_optional)]
+CurrentUserOptional = Annotated[User, Depends(get_current_user_optional)]
