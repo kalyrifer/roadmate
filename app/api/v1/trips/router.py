@@ -218,6 +218,7 @@ async def create_trip(
     trip_data: TripCreateRequest,
     current_user: CurrentUserDep,
     trip_service: TripServiceDep,
+    db: AsyncSession = Depends(get_db),
 ) -> TripResponse:
     """
     Создание новой поездки.
@@ -228,6 +229,7 @@ async def create_trip(
         trip_data: Данные для создания поездки
         current_user: Текущий авторизованный пользователь
         trip_service: Сервис для работы с поездками
+        db: Сессия БД
         
     Returns:
         TripResponse: Созданная поездка
@@ -235,10 +237,12 @@ async def create_trip(
     Raises:
         HTTPException: 403 если пользователь не авторизован
     """
-    return await trip_service.create_trip(
+    trip = await trip_service.create_trip(
         current_user=current_user,
         trip_data=trip_data.model_dump()
     )
+    await db.commit()
+    return trip
 
 
 @router.get("/{trip_id}")

@@ -70,7 +70,7 @@ class TripRepository:
         trip.normalize_times()
         
         self.session.add(trip)
-        await self.session.commit()
+        await self.session.flush()
         await self.session.refresh(trip)
         return trip
     

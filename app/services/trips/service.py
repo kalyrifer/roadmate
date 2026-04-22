@@ -11,6 +11,7 @@ from fastapi import HTTPException, status
 from app.models.trips.model import TripStatus
 from app.models.users.model import User, UserRole
 from app.repositories.trips.repository import TripRepository
+from app.repositories.chat.repository import ChatRepository
 from app.schemas.trips.schemas import (
     TripResponse,
     PaginatedTrips,
@@ -40,6 +41,29 @@ class TripService:
         self.trip_repo = trip_repository
         self._db = db
     
+    async def _create_trip_chat(self, trip_id: uuid.UUID, driver_id: uuid.UUID) -> None:
+        """Создание группового чата для поездки с водителем."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        if not self._db:
+            logger.warning("No db session for creating trip chat")
+            return
+        
+        try:
+            chat_repo = ChatRepository(self._db)
+            existing = await chat_repo.get_conversation_by_trip(trip_id)
+            if existing:
+                logger.info(f"Chat already exists for trip {trip_id}")
+                return
+            
+            conversation = await chat_repo.create_conversation(trip_id)
+            await chat_repo.add_participant(conversation.id, driver_id)
+            await self._db.flush()
+            logger.info(f"Created trip chat {conversation.id} for trip {trip_id} with driver {driver_id}")
+        except Exception as e:
+            logger.error(f"Failed to create trip chat: {e}", exc_info=True)
+    
     async def create_trip(
         self,
         current_user: User,
@@ -64,6 +88,8 @@ class TripService:
         
         # Создаем поездку
         trip = await self.trip_repo.create(trip_data, current_user.id)
+        
+        await self._create_trip_chat(trip.id, current_user.id)
         
         return TripResponse.from_orm(trip)
     

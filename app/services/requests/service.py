@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 from app.models.requests.model import TripRequest, TripRequestStatus
 from app.models.trips.model import Trip, TripStatus
 from app.repositories.requests.repository import TripRequestRepository
+from app.repositories.chat.repository import ChatRepository
 from app.schemas.requests import TripRequestCreate, TripRequestList
 from app.services.notifications.service import NotificationEventService
 
@@ -78,6 +79,22 @@ class TripRequestService:
         self.session = session
         self.repository = TripRequestRepository(session)
         self.notifications = NotificationEventService(session)
+    
+    async def _add_passenger_to_trip_chat(self, trip_id: UUID, passenger_id: UUID, driver_id: UUID) -> None:
+        """Добавление пассажира в групповой чат поездки."""
+        try:
+            chat_repo = ChatRepository(self.session)
+            conversation = await chat_repo.get_conversation_by_trip(trip_id)
+            
+            if not conversation:
+                conversation = await chat_repo.create_conversation(trip_id)
+                await chat_repo.add_participant(conversation.id, driver_id)
+            
+            await chat_repo.add_participant(conversation.id, passenger_id)
+            await self.session.flush()
+            logger.info(f"Added passenger {passenger_id} to trip chat {conversation.id}")
+        except Exception as e:
+            logger.warning(f"Failed to add passenger to trip chat: {e}", exc_info=True)
 
     def _format_user_name(self, user: User | None) -> str:
         if not user:
@@ -174,6 +191,8 @@ class TripRequestService:
         )
         logger.info(f"Request created successfully: {request.id}")
 
+        await self._add_passenger_to_trip_chat(trip_id, passenger_id, trip.driver_id)
+        
         # Уведомляем водителя о новой заявке
         try:
             logger.info("Sending notification to driver...")
@@ -335,6 +354,8 @@ class TripRequestService:
             from_city=request_ctx.trip.from_city,
             to_city=request_ctx.trip.to_city,
         )
+        
+        await self._add_passenger_to_trip_chat(request_ctx.trip_id, request_ctx.passenger_id, request_ctx.trip.driver_id)
 
         return confirmed_request
 
