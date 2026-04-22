@@ -25,8 +25,15 @@ export default function TripPage() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedPassengerId, setSelectedPassengerId] = useState<string | null>(null);
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [seatsRequested, setSeatsRequested] = useState<number>(1);
   const [message, setMessage] = useState<string>('');
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState<number>(5);
+  const [reviewText, setReviewText] = useState<string>('');
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [canReview, setCanReview] = useState<boolean>(false);
+  const [reviewReason, setReviewReason] = useState<string>('');
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -78,6 +85,36 @@ export default function TripPage() {
       }
     },
     enabled: !!selectedPassengerId,
+  });
+
+  const { data: driverProfile, isLoading: driverProfileLoading } = useQuery({
+    queryKey: ['userProfile', selectedDriverId],
+    queryFn: async () => {
+      if (!selectedDriverId) return null;
+      try {
+        const result = await usersApi.getById(selectedDriverId);
+        return result;
+      } catch (err) {
+        console.error('Error loading driver profile:', err);
+        return null;
+      }
+    },
+    enabled: !!selectedDriverId,
+  });
+
+  const { data: canReviewData } = useQuery({
+    queryKey: ['canReview', id],
+    queryFn: async () => {
+      if (!id) return { can_review: false, reason: '' };
+      try {
+        const result = await reviewsApi.checkCanReview(id);
+        return result;
+      } catch (err) {
+        console.error('Error checking can review:', err);
+        return { can_review: false, reason: '' };
+      }
+    },
+    enabled: !!id,
   });
 
   const formatDate = (dateString: string) => {
@@ -140,6 +177,28 @@ export default function TripPage() {
     mutationFn: () => chatApi.createOrGetConversation(id!, ''),
     onSuccess: (conversation) => {
       navigate(`/chat/${conversation.id}`);
+    },
+  });
+
+  const createReviewMutation = useMutation({
+    mutationFn: async () => {
+      setReviewError(null);
+      if (!id || !selectedDriverId) return;
+      return reviewsApi.create({
+        trip_id: id,
+        target_id: selectedDriverId,
+        rating: reviewRating,
+        text: reviewText.trim() ? reviewText.trim() : undefined,
+      });
+    },
+    onSuccess: () => {
+      setIsReviewModalOpen(false);
+      setReviewRating(5);
+      setReviewText('');
+      queryClient.invalidateQueries({ queryKey: ['driverReviews', trip?.driver_id] });
+    },
+    onError: (e: any) => {
+      setReviewError(e?.response?.data?.detail || t('errors.serverError'));
     },
   });
 
@@ -249,7 +308,11 @@ export default function TripPage() {
               </div>
             )}
             <div>
-              <div className={styles.driverName}>
+              <div 
+                className={styles.driverName}
+                style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                onClick={() => setSelectedDriverId(trip.driver_id)}
+              >
                 {driverName}
               </div>
               {driverRating !== undefined && (
@@ -560,6 +623,133 @@ export default function TripPage() {
         ) : (
           <div>Загрузка...</div>
         )}
+      </Modal>
+
+      {/* Модальное окно профиля водителя */}
+      <Modal
+        isOpen={!!selectedDriverId}
+        onClose={() => setSelectedDriverId(null)}
+        title="Профиль водителя"
+      >
+        {driverProfileLoading ? (
+          <div>Загрузка...</div>
+        ) : driverProfile ? (
+          <div className={styles.passengerProfileModal}>
+            <div className={styles.profileHeader}>
+              {driverProfile.avatar_url ? (
+                <img src={driverProfile.avatar_url} alt="" className={styles.profileAvatar} />
+              ) : (
+                <div className={styles.profileAvatarPlaceholder}>
+                  {driverProfile.name?.charAt(0).toUpperCase() || '?'}
+                </div>
+              )}
+              <div className={styles.profileInfo}>
+                <h3 className={styles.profileName}>{driverProfile.name}</h3>
+                {driverProfile.rating_average !== undefined && (
+                  <div className={styles.profileRating}>
+                    ★ {driverProfile.rating_average.toFixed(1)} ({driverProfile.rating_count || 0} отзывов)
+                  </div>
+                )}
+              </div>
+            </div>
+            {driverProfile.phone && (
+              <div className={styles.profileField}>
+                <span className={styles.profileLabel}>Телефон:</span>
+                <span className={styles.profileValue}>{driverProfile.phone}</span>
+              </div>
+            )}
+            {driverProfile.bio && (
+              <div className={styles.profileField}>
+                <span className={styles.profileLabel}>О себе:</span>
+                <span className={styles.profileValue}>{driverProfile.bio}</span>
+              </div>
+            )}
+            <div className={styles.profileActions}>
+              <Button 
+                variant="secondary"
+                onClick={() => {
+                  chatApi.createOrGetConversation(selectedDriverId!, '').then((conv) => {
+                    navigate(`/chat/${conv.id}`);
+                    setSelectedDriverId(null);
+                  });
+                }}
+              >
+                Написать сообщение
+              </Button>
+              {trip?.status === 'completed' && isAuthenticated && !isOwner && canReviewData?.can_review && (
+                <Button 
+                  variant="primary" 
+                  onClick={() => {
+                    setIsReviewModalOpen(true);
+                  }}
+                >
+                  Оставить отзыв
+                </Button>
+              )}
+              {trip?.status === 'completed' && isAuthenticated && !isOwner && !canReviewData?.can_review && canReviewData?.reason && (
+                <div style={{ fontSize: '12px', color: '#888', marginTop: '8px' }}>
+                  {canReviewData.reason}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div>Не удалось загрузить профиль</div>
+        )}
+      </Modal>
+
+      {/* Модальное окно создания отзыва */}
+      <Modal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        title="Оставить отзыв"
+      >
+        <div className={styles.bookingModal}>
+          <div className={styles.bookingForm}>
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
+                Оценка
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <span
+                    key={star}
+                    onClick={() => setReviewRating(star)}
+                    style={{
+                      fontSize: '24px',
+                      cursor: 'pointer',
+                      color: star <= reviewRating ? '#ffd700' : '#ccc',
+                    }}
+                  >
+                    ★
+                  </span>
+                ))}
+              </div>
+            </div>
+            <Input
+              label="Комментарий"
+              type="text"
+              value={reviewText}
+              onChange={(e) => setReviewText(e.target.value)}
+              placeholder="Напишите ваш отзыв (необязательно)"
+            />
+          </div>
+
+          {reviewError && <div className={styles.bookingError}>{reviewError}</div>}
+
+          <div className={styles.bookingActions}>
+            <Button variant="secondary" onClick={() => setIsReviewModalOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="primary"
+              loading={createReviewMutation.isPending}
+              onClick={() => createReviewMutation.mutate()}
+            >
+              Отправить отзыв
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

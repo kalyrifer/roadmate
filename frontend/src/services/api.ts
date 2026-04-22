@@ -246,14 +246,39 @@ export const chatApi = {
 
 // ================== Reviews API ==================
 export const reviewsApi = {
-  getForUser: async (userId: string) => {
-    const response = await axiosInstance.get<PaginatedResponse<any>>(`/reviews/user/${userId}`);
+  getForUser: async (userId: string, page: number = 1, pageSize: number = 20) => {
+    const response = await axiosInstance.get<PaginatedResponse<any>>(`/reviews/user/${userId}`, {
+      params: { status_filter: 'published', page, page_size: pageSize },
+    });
     return response.data;
   },
   
-  create: async (data: { trip_id: string; reviewee_id: string; rating: number; comment?: string }) => {
-    const response = await axiosInstance.post('/reviews', data);
+  getTripReviews: async (tripId: string, page: number = 1, pageSize: number = 20) => {
+    const response = await axiosInstance.get<PaginatedResponse<any>>(`/reviews/trip/${tripId}`, {
+      params: { status_filter: 'published', page, page_size: pageSize },
+    });
     return response.data;
+  },
+  
+  create: async (data: { trip_id: string; target_id: string; rating: number; text?: string }) => {
+    const response = await axiosInstance.post<any>('/reviews', data);
+    return response.data;
+  },
+  
+  checkCanReview: async (tripId: string): Promise<{ can_review: boolean; reason: string }> => {
+    const response = await axiosInstance.get<{ can_review: boolean; reason: string }>(
+      `/reviews/me/trip/${tripId}/can-review`
+    );
+    return response.data;
+  },
+  
+  updateStatus: async (reviewId: string, status: string) => {
+    const response = await axiosInstance.put<any>(`/reviews/${reviewId}`, { status });
+    return response.data;
+  },
+  
+  delete: async (reviewId: string) => {
+    await axiosInstance.delete(`/reviews/${reviewId}`);
   },
 };
 
