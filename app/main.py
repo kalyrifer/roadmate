@@ -41,6 +41,7 @@ app.add_middleware(
 )
 
 
+
 @app.on_event("startup")
 async def startup_event() -> None:
     """Запуск при старте приложения."""
