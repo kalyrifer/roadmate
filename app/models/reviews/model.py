@@ -146,8 +146,8 @@ class Review(Base):
 
     # === Индексы и ограничения ===
     __table_args__ = (
-        # Уникальный индекс: один пользователь - один отзыв на одну поездку
-        UniqueConstraint("trip_id", "author_id", name="uq_reviews_trip_author"),
+        # Уникальный индекс: один отзыв от одного автора о одном участнике на одну поездку
+        UniqueConstraint("trip_id", "author_id", "target_id", name="uq_reviews_trip_author_target"),
         # Индексы для быстрого поиска
         Index("ix_reviews_trip_id", "trip_id"),
         Index("ix_reviews_author_id", "author_id"),

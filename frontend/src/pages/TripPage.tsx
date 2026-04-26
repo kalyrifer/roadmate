@@ -33,8 +33,8 @@ export default function TripPage() {
   const [reviewRating, setReviewRating] = useState<number>(5);
   const [reviewText, setReviewText] = useState<string>('');
   const [reviewError, setReviewError] = useState<string | null>(null);
-  const [canReview, setCanReview] = useState<boolean>(false);
-  const [reviewReason, setReviewReason] = useState<string>('');
+  const [reviewTargetId, setReviewTargetId] = useState<string | null>(null);
+  const [reviewTargetName, setReviewTargetName] = useState<string>('');
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -71,6 +71,34 @@ export default function TripPage() {
       }
     },
     enabled: !!trip?.driver_id,
+  });
+
+  const { data: selectedDriverReviews } = useQuery({
+    queryKey: ['userReviews', selectedDriverId],
+    queryFn: async () => {
+      if (!selectedDriverId) return null;
+      try {
+        return await reviewsApi.getForUser(selectedDriverId);
+      } catch (err) {
+        console.error('Error loading driver reviews:', err);
+        return null;
+      }
+    },
+    enabled: !!selectedDriverId,
+  });
+
+  const { data: selectedPassengerReviews } = useQuery({
+    queryKey: ['userReviews', selectedPassengerId],
+    queryFn: async () => {
+      if (!selectedPassengerId) return null;
+      try {
+        return await reviewsApi.getForUser(selectedPassengerId);
+      } catch (err) {
+        console.error('Error loading passenger reviews:', err);
+        return null;
+      }
+    },
+    enabled: !!selectedPassengerId,
   });
 
   const { data: passengerProfile } = useQuery({
@@ -195,10 +223,10 @@ export default function TripPage() {
   const createReviewMutation = useMutation({
     mutationFn: async () => {
       setReviewError(null);
-      if (!id || !selectedDriverId) return;
+      if (!id || !reviewTargetId) return;
       return reviewsApi.create({
         trip_id: id,
-        target_id: selectedDriverId,
+        target_id: reviewTargetId,
         rating: reviewRating,
         text: reviewText.trim() ? reviewText.trim() : undefined,
       });
@@ -208,11 +236,25 @@ export default function TripPage() {
       setReviewRating(5);
       setReviewText('');
       queryClient.invalidateQueries({ queryKey: ['driverReviews', trip?.driver_id] });
+      if (reviewTargetId) {
+        queryClient.invalidateQueries({ queryKey: ['userReviews', reviewTargetId] });
+        queryClient.invalidateQueries({ queryKey: ['userProfile', reviewTargetId] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['canReview', id] });
     },
     onError: (e: any) => {
       setReviewError(e?.response?.data?.detail || t('errors.serverError'));
     },
   });
+
+  const openReviewModal = (targetUserId: string, targetName: string) => {
+    setReviewTargetId(targetUserId);
+    setReviewTargetName(targetName);
+    setReviewRating(5);
+    setReviewText('');
+    setReviewError(null);
+    setIsReviewModalOpen(true);
+  };
 
   // Now handle conditional loading state
   if (isLoading) {
@@ -343,10 +385,10 @@ export default function TripPage() {
               {driverReviews.items.slice(0, 5).map((review: any) => (
                 <div key={review.id} className={styles.reviewItem}>
                   <div className={styles.reviewHeader}>
-                    <span className={styles.reviewAuthor}>{review.reviewer?.name || review.reviewer?.first_name || 'Пользователь'}</span>
+                    <span className={styles.reviewAuthor}>{review.author?.name || t('reviews.anonymous')}</span>
                     <span className={styles.reviewRating}>★ {review.rating}</span>
                   </div>
-                  {review.comment && <p className={styles.reviewComment}>{review.comment}</p>}
+                  {review.text && <p className={styles.reviewComment}>{review.text}</p>}
                   <div className={styles.reviewDate}>
                     {review.created_at ? new Date(review.created_at).toLocaleDateString('ru-RU') : ''}
                   </div>
@@ -613,7 +655,7 @@ export default function TripPage() {
                 <h3 className={styles.profileName}>{passengerProfile.name}</h3>
                 {passengerProfile.rating_average !== undefined && (
                   <div className={styles.profileRating}>
-                    ★ {passengerProfile.rating_average.toFixed(1)} ({passengerProfile.rating_count || 0} отзывов)
+                    ★ {passengerProfile.rating_average.toFixed(1)} ({passengerProfile.rating_count || 0} {t('reviews.reviews')})
                   </div>
                 )}
               </div>
@@ -630,18 +672,55 @@ export default function TripPage() {
                 <span className={styles.profileValue}>{passengerProfile.bio}</span>
               </div>
             )}
+            {selectedPassengerReviews && selectedPassengerReviews.items && selectedPassengerReviews.items.length > 0 && (
+              <div className={styles.driverReviews}>
+                <h4 style={{ margin: '12px 0 8px' }}>{t('reviews.reviewsTitle')}</h4>
+                <div className={styles.reviewsList}>
+                  {selectedPassengerReviews.items.slice(0, 5).map((review: any) => (
+                    <div key={review.id} className={styles.reviewItem}>
+                      <div className={styles.reviewHeader}>
+                        <span className={styles.reviewAuthor}>{review.author?.name || t('reviews.anonymous')}</span>
+                        <span className={styles.reviewRating}>★ {review.rating}</span>
+                      </div>
+                      {review.text && <p className={styles.reviewComment}>{review.text}</p>}
+                      <div className={styles.reviewDate}>
+                        {review.created_at ? new Date(review.created_at).toLocaleDateString('ru-RU') : ''}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className={styles.profileActions}>
-              <Button 
-                variant="primary" 
-                onClick={() => {
-                  chatApi.createOrGetConversation(selectedPassengerId!, '').then((conv) => {
-                    navigate(`/chat/${conv.id}`);
+              {isAuthenticated && currentUser?.id !== selectedPassengerId && (
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    chatApi.createOrGetConversation(selectedPassengerId!, '').then((conv) => {
+                      navigate(`/chat/${conv.id}`);
+                      setSelectedPassengerId(null);
+                    });
+                  }}
+                >
+                  Написать сообщение
+                </Button>
+              )}
+              {isAuthenticated && currentUser?.id !== selectedPassengerId && canReviewData?.can_review && (
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    openReviewModal(selectedPassengerId!, passengerProfile.name);
                     setSelectedPassengerId(null);
-                  });
-                }}
-              >
-                Написать сообщение
-              </Button>
+                  }}
+                >
+                  {t('reviews.leaveReview')}
+                </Button>
+              )}
+              {isAuthenticated && currentUser?.id !== selectedPassengerId && !canReviewData?.can_review && canReviewData?.reason && (
+                <div style={{ fontSize: '12px', color: '#888', marginTop: '8px' }}>
+                  {canReviewData.reason}
+                </div>
+              )}
             </div>
           </div>
         ) : (
@@ -688,18 +767,38 @@ export default function TripPage() {
                 <span className={styles.profileValue}>{driverProfile.bio}</span>
               </div>
             )}
+            {selectedDriverReviews && selectedDriverReviews.items && selectedDriverReviews.items.length > 0 && (
+              <div className={styles.driverReviews}>
+                <h4 style={{ margin: '12px 0 8px' }}>{t('reviews.reviewsTitle')}</h4>
+                <div className={styles.reviewsList}>
+                  {selectedDriverReviews.items.slice(0, 5).map((review: any) => (
+                    <div key={review.id} className={styles.reviewItem}>
+                      <div className={styles.reviewHeader}>
+                        <span className={styles.reviewAuthor}>{review.author?.name || t('reviews.anonymous')}</span>
+                        <span className={styles.reviewRating}>★ {review.rating}</span>
+                      </div>
+                      {review.text && <p className={styles.reviewComment}>{review.text}</p>}
+                      <div className={styles.reviewDate}>
+                        {review.created_at ? new Date(review.created_at).toLocaleDateString('ru-RU') : ''}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className={styles.profileActions}>
-{trip?.status === 'completed' && isAuthenticated && !isOwner && canReviewData?.can_review && (
-                <Button 
-                  variant="primary" 
+              {isAuthenticated && !isOwner && canReviewData?.can_review && (
+                <Button
+                  variant="primary"
                   onClick={() => {
-                    setIsReviewModalOpen(true);
+                    openReviewModal(selectedDriverId!, driverProfile.name);
+                    setSelectedDriverId(null);
                   }}
                 >
-                  Оставить отзыв
+                  {t('reviews.leaveReview')}
                 </Button>
               )}
-              {trip?.status === 'completed' && isAuthenticated && !isOwner && !canReviewData?.can_review && canReviewData?.reason && (
+              {isAuthenticated && !isOwner && !canReviewData?.can_review && canReviewData?.reason && (
                 <div style={{ fontSize: '12px', color: '#888', marginTop: '8px' }}>
                   {canReviewData.reason}
                 </div>
@@ -715,13 +814,18 @@ export default function TripPage() {
       <Modal
         isOpen={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}
-        title="Оставить отзыв"
+        title={t('reviews.leaveReview')}
       >
         <div className={styles.bookingModal}>
           <div className={styles.bookingForm}>
+            {reviewTargetName && (
+              <p style={{ marginBottom: '12px', color: '#666' }}>
+                {t('reviews.reviewAbout', { name: reviewTargetName })}
+              </p>
+            )}
             <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
-                Оценка
+                {t('reviews.rating')}
               </label>
               <div style={{ display: 'flex', gap: '8px' }}>
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -740,11 +844,11 @@ export default function TripPage() {
               </div>
             </div>
             <Input
-              label="Комментарий"
+              label={t('reviews.comment')}
               type="text"
               value={reviewText}
               onChange={(e) => setReviewText(e.target.value)}
-              placeholder="Напишите ваш отзыв (необязательно)"
+              placeholder={t('reviews.commentPlaceholder')}
             />
           </div>
 
@@ -752,14 +856,14 @@ export default function TripPage() {
 
           <div className={styles.bookingActions}>
             <Button variant="secondary" onClick={() => setIsReviewModalOpen(false)}>
-              {t('common.cancel')}
+              {t('reviews.cancel')}
             </Button>
             <Button
               variant="primary"
               loading={createReviewMutation.isPending}
               onClick={() => createReviewMutation.mutate()}
             >
-              Отправить отзыв
+              {t('reviews.submit')}
             </Button>
           </div>
         </div>
