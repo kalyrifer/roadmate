@@ -102,7 +102,7 @@ class Review(Base):
             values_callable=lambda x: [e.value for e in x],  # Приводим к lowercase
         ),
         nullable=False,
-        default=ReviewStatus.PENDING,
+        default=ReviewStatus.PUBLISHED,
         index=True,
         comment="Статус отзыва",
     )

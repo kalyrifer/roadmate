@@ -31,7 +31,7 @@ class ReviewRepository:
             target_id=target_id,
             rating=rating,
             text=text,
-            status=ReviewStatus.PENDING,
+            status=ReviewStatus.PUBLISHED,
         )
         self.session.add(review)
         await self.session.flush()
