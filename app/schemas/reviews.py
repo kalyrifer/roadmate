@@ -5,9 +5,34 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 from app.models.reviews.model import ReviewStatus
+
+
+class ReviewUserSummary(BaseModel):
+    """Краткая информация об авторе или получателе отзыва."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    avatar_url: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _build_name(cls, data):
+        if hasattr(data, "first_name"):
+            first = (getattr(data, "first_name", None) or "").strip()
+            last = (getattr(data, "last_name", None) or "").strip()
+            full = f"{first} {last}".strip()
+            if not full and getattr(data, "email", None):
+                full = data.email.split("@")[0]
+            return {
+                "id": data.id,
+                "name": full or "Участник",
+                "avatar_url": getattr(data, "avatar_url", None),
+            }
+        return data
 
 
 # === Базовая схема ===
@@ -34,7 +59,7 @@ class ReviewStatusUpdate(BaseModel):
 class ReviewRead(ReviewBase):
     """Схема для чтения отзыва."""
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: UUID
     trip_id: UUID
     author_id: UUID
@@ -42,6 +67,8 @@ class ReviewRead(ReviewBase):
     status: ReviewStatus
     created_at: datetime
     updated_at: datetime
+    author: Optional[ReviewUserSummary] = None
+    target: Optional[ReviewUserSummary] = None
 
 
 # === Схема для списка с пагинацией ===

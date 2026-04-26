@@ -6,6 +6,7 @@ from uuid import UUID
 
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.reviews.model import Review, ReviewStatus
 
@@ -35,7 +36,7 @@ class ReviewRepository:
         )
         self.session.add(review)
         await self.session.flush()
-        await self.session.refresh(review)
+        await self.session.refresh(review, attribute_names=["author", "target"])
         return review
 
     async def get_by_id(self, review_id: UUID) -> Optional[Review]:
@@ -54,6 +55,22 @@ class ReviewRepository:
                 and_(
                     Review.trip_id == trip_id,
                     Review.author_id == author_id,
+                )
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def get_by_trip_author_target(
+        self, trip_id: UUID, author_id: UUID, target_id: UUID
+    ) -> Optional[Review]:
+        """Получение отзыва конкретного автора об одном участнике поездки."""
+        result = await self.session.execute(
+            select(Review)
+            .where(
+                and_(
+                    Review.trip_id == trip_id,
+                    Review.author_id == author_id,
+                    Review.target_id == target_id,
                 )
             )
         )
@@ -79,7 +96,7 @@ class ReviewRepository:
         limit: int = 50,
         offset: int = 0,
     ) -> tuple[list[Review], int]:
-        """Получение списка отзывов для поездки."""
+        """Получение списка отзывов для поездки (вместе с автором и получателем)."""
         conditions = [Review.trip_id == trip_id]
         if status:
             conditions.append(Review.status == status)
@@ -94,6 +111,7 @@ class ReviewRepository:
         # Получаем отзывы
         result = await self.session.execute(
             select(Review)
+            .options(selectinload(Review.author), selectinload(Review.target))
             .where(and_(*conditions))
             .order_by(Review.created_at.desc())
             .limit(limit)
@@ -110,7 +128,7 @@ class ReviewRepository:
         limit: int = 50,
         offset: int = 0,
     ) -> tuple[list[Review], int]:
-        """Получение списка отзывов о пользователе."""
+        """Получение списка отзывов о пользователе (вместе с автором)."""
         conditions = [Review.target_id == target_id]
         if status:
             conditions.append(Review.status == status)
@@ -125,6 +143,7 @@ class ReviewRepository:
         # Получаем отзывы
         result = await self.session.execute(
             select(Review)
+            .options(selectinload(Review.author), selectinload(Review.target))
             .where(and_(*conditions))
             .order_by(Review.created_at.desc())
             .limit(limit)
@@ -141,7 +160,7 @@ class ReviewRepository:
         limit: int = 50,
         offset: int = 0,
     ) -> tuple[list[Review], int]:
-        """Получение списка отзывов, оставленных пользователем."""
+        """Получение списка отзывов, оставленных пользователем (вместе с получателем)."""
         conditions = [Review.author_id == author_id]
         if status:
             conditions.append(Review.status == status)
@@ -156,6 +175,7 @@ class ReviewRepository:
         # Получаем отзывы
         result = await self.session.execute(
             select(Review)
+            .options(selectinload(Review.author), selectinload(Review.target))
             .where(and_(*conditions))
             .order_by(Review.created_at.desc())
             .limit(limit)

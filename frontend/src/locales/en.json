@@ -160,7 +160,6 @@
     "carModelPlaceholder": "Toyota Camry",
     "carColor": "Car color",
     "carColorPlaceholder": "Black",
-    "licensePlate": "License plate",
     "licensePlatePlaceholder": "ABC123",
     "preferences": "Notes",
     "luggageAllowed": "Luggage",
@@ -267,5 +266,25 @@
     "updateTrip": "Failed to update trip",
     "deleteTrip": "Failed to cancel trip",
     "createTrip": "Failed to create trip"
+  },
+  "reviews": {
+    "reviewsTitle": "Reviews",
+    "reviews": "reviews",
+    "noReviews": "No reviews yet",
+    "leaveReview": "Leave a review",
+    "reviewAbout": "You are leaving a review about {{name}}",
+    "rating": "Rating",
+    "comment": "Comment",
+    "commentPlaceholder": "Write your review (optional)",
+    "submit": "Submit review",
+    "cancel": "Cancel",
+    "submitError": "Failed to submit review",
+    "ratingShort": "{{count}} {{label}}",
+    "yourReview": "Your review",
+    "anonymous": "Participant",
+    "showAll": "Show all",
+    "delete": "Delete",
+    "deleteConfirm": "Delete your review?",
+    "deleteError": "Failed to delete review"
   }
 }

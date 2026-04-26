@@ -98,15 +98,11 @@ class ReviewService:
         author_id: UUID,
         data: ReviewCreate,
     ) -> Review:
-        """Создание отзыва."""
+        """Создание отзыва. Разрешено на любом статусе поездки."""
         # Получаем поездку
         trip = await self._get_trip(data.trip_id)
         if not trip:
             raise TripNotFoundError("Поездка не найдена")
-
-        # Проверка: поездка завершена
-        if trip.status != TripStatus.COMPLETED:
-            raise TripNotCompletedError("Отзыв можно оставить только после завершения поездки")
 
         # Проверка: автор не может оставить отзыв о себе
         if author_id == data.target_id:
@@ -121,12 +117,12 @@ class ReviewService:
         if data.target_id not in participants:
             raise UserNotParticipantError("Пользователь не является участником этой поездки")
 
-        # Проверка: отзыв ещё не существует (защита на уровне БД + проверка)
-        existing_review = await self.repository.get_by_trip_and_author(
-            data.trip_id, author_id
+        # Проверка: отзыв на этого участника ещё не существует (защита на уровне БД + проверка)
+        existing_review = await self.repository.get_by_trip_author_target(
+            data.trip_id, author_id, data.target_id
         )
         if existing_review:
-            raise ReviewAlreadyExistsError("Вы уже оставили отзыв на эту поездку")
+            raise ReviewAlreadyExistsError("Вы уже оставили отзыв об этом участнике")
 
         # Создаём отзыв
         review = await self.repository.create(
@@ -263,24 +259,19 @@ class ReviewService:
         user_id: UUID,
         trip_id: UUID,
     ) -> tuple[bool, str]:
-        """Проверка, может ли пользователь оставить отзыв на поездку."""
+        """Проверка, может ли пользователь оставить отзыв на поездку.
+
+        Разрешено на любом статусе поездки; проверяется только
+        участие в поездке и отсутствие ранее оставленного отзыва.
+        """
         # Получаем поездку
         trip = await self._get_trip(trip_id)
         if not trip:
             return False, "Поездка не найдена"
 
-        # Проверяем статус поездки
-        if trip.status != TripStatus.COMPLETED:
-            return False, "Отзыв можно оставить только после завершения поездки"
-
         # Проверяем, что пользователь участник
         participants = await self._get_confirmed_participants(trip_id)
         if user_id not in participants:
             return False, "Вы не являетесь участником этой поездки"
-
-        # Проверяем, что отзыв ещё не существует
-        existing = await self.repository.get_by_trip_and_author(trip_id, user_id)
-        if existing:
-            return False, "Вы уже оставили отзыв на эту поездку"
 
         return True, ""

@@ -168,7 +168,6 @@
     "carModelPlaceholder": "Toyota Camry",
     "carColor": "Цвет автомобиля",
     "carColorPlaceholder": "Чёрный",
-    "licensePlate": "Госномер",
     "licensePlatePlaceholder": "А123БВ77",
     "preferences": "Пометки",
     "luggageAllowed": "Багаж",
@@ -185,8 +184,7 @@
     "updateSuccessTitle": "Поездка обновлена!",
     "updateSuccessMessage": "Поездка успешно обновлена.",
     "editTrip": "Редактировать поездку",
-    "backToMyTrips": "Вернуться к моим поездкам",
-    "publish": "Опубликовать"
+    "backToMyTrips": "Вернуться к моим поездкам"
   },
   "requests": {
     "title": "Заявки",
@@ -268,5 +266,25 @@
     "deleteTrip": "Не удалось отменить поездку. Попробуйте позже.",
     "completeTrip": "Не удалось завершить поездку. Попробуйте позже.",
     "tripNotFound": "Поездка не найдена"
+  },
+  "reviews": {
+    "reviewsTitle": "Отзывы",
+    "reviews": "отзывов",
+    "noReviews": "Отзывов пока нет",
+    "leaveReview": "Оставить отзыв",
+    "reviewAbout": "Вы оставляете отзыв о {{name}}",
+    "rating": "Оценка",
+    "comment": "Комментарий",
+    "commentPlaceholder": "Напишите ваш отзыв (необязательно)",
+    "submit": "Отправить отзыв",
+    "cancel": "Отмена",
+    "submitError": "Не удалось отправить отзыв",
+    "ratingShort": "{{count}} {{label}}",
+    "yourReview": "Ваш отзыв",
+    "anonymous": "Участник",
+    "showAll": "Показать все",
+    "delete": "Удалить",
+    "deleteConfirm": "Удалить ваш отзыв?",
+    "deleteError": "Не удалось удалить отзыв"
   }
 }
