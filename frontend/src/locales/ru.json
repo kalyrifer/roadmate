@@ -282,7 +282,10 @@
     "ratingShort": "{{count}} {{label}}",
     "yourReview": "Ваш отзыв",
     "anonymous": "Участник",
-    "showAll": "Показать все",
+    "viewReviews": "Посмотреть отзывы",
+    "hideReviews": "Скрыть отзывы",
+    "showAll": "Посмотреть все",
+    "alreadyParticipating": "Вы уже участвуете в этой поездке",
     "delete": "Удалить",
     "deleteConfirm": "Удалить ваш отзыв?",
     "deleteError": "Не удалось удалить отзыв"

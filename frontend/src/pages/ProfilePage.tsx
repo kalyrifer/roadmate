@@ -293,12 +293,21 @@ export default function ProfilePage() {
                 {profile.reviews.map((review) => (
                   <div key={review.id} className={styles.reviewCard}>
                     <div className={styles.reviewHeader}>
-                      <div className={styles.reviewRating}>
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <span key={star} className={star <= review.rating ? styles.star : styles.starEmpty}>
-                            ★
-                          </span>
-                        ))}
+                      <div className={styles.reviewAuthorBlock}>
+                        {review.author?.avatar_url ? (
+                          <img
+                            src={review.author.avatar_url}
+                            alt=""
+                            className={styles.reviewAuthorAvatar}
+                          />
+                        ) : (
+                          <div className={styles.reviewAuthorAvatarPlaceholder}>
+                            {(review.author?.name || t('reviews.anonymous')).charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <span className={styles.reviewAuthorName}>
+                          {review.author?.name || t('reviews.anonymous')}
+                        </span>
                       </div>
                       <span className={styles.reviewDate}>
                         {new Date(review.created_at).toLocaleDateString('ru-RU', {
@@ -307,6 +316,13 @@ export default function ProfilePage() {
                           day: 'numeric',
                         })}
                       </span>
+                    </div>
+                    <div className={styles.reviewRating}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span key={star} className={star <= review.rating ? styles.star : styles.starEmpty}>
+                          ★
+                        </span>
+                      ))}
                     </div>
                     {review.text && <p className={styles.reviewText}>{review.text}</p>}
                   </div>

@@ -17,6 +17,16 @@ from pydantic import (
 )
 
 
+class ReviewAuthorInProfile(BaseModel):
+    """Краткая информация об авторе отзыва."""
+
+    id: str = Field(..., description="ID автора отзыва")
+    name: str = Field(..., description="Имя автора отзыва")
+    avatar_url: str | None = Field(None, description="URL аватара автора")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ReviewInProfileResponse(BaseModel):
     """
     Схема отзыва в профиле пользователя.
@@ -25,6 +35,9 @@ class ReviewInProfileResponse(BaseModel):
     """
     id: str = Field(..., description="Уникальный идентификатор отзыва")
     author_id: str = Field(..., description="ID автора отзыва")
+    author: ReviewAuthorInProfile | None = Field(
+        None, description="Краткая информация об авторе отзыва"
+    )
     rating: int = Field(..., description="Оценка от 1 до 5", ge=1, le=5)
     text: str | None = Field(None, description="Текст отзыва")
     created_at: datetime = Field(..., description="Время создания отзыва")

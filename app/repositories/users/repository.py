@@ -14,6 +14,7 @@ from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.users.model import User, UserRole
 from app.models.reviews.model import Review, ReviewStatus
@@ -84,9 +85,10 @@ class UserRepository:
         if not user:
             return None, [], 0
         
-        # Получаем опубликованные отзывы о пользователе
+        # Получаем опубликованные отзывы о пользователе с автором
         stmt = (
             select(Review)
+            .options(selectinload(Review.author))
             .where(Review.target_id == user_id)
             .where(Review.status == ReviewStatus.PUBLISHED.value)
             .order_by(Review.created_at.desc())

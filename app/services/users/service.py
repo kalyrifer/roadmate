@@ -19,6 +19,7 @@ from app.core.config import settings
 from app.models.users.model import User, UserRole
 from app.repositories.users.repository import UserRepository
 from app.schemas.users.schemas import (
+    ReviewAuthorInProfile,
     ReviewInProfileResponse,
     UserResponse,
     UserUpdateRequest,
@@ -77,10 +78,25 @@ class UserService:
             )
         
         # Преобразуем отзывы в схему
+        def _build_author(author: User | None) -> ReviewAuthorInProfile | None:
+            if author is None:
+                return None
+            first = (author.first_name or "").strip()
+            last = (author.last_name or "").strip()
+            full_name = f"{first} {last}".strip()
+            if not full_name:
+                full_name = author.email.split("@")[0] if author.email else "Участник"
+            return ReviewAuthorInProfile(
+                id=str(author.id),
+                name=full_name,
+                avatar_url=author.avatar_url,
+            )
+
         reviews_schema = [
             ReviewInProfileResponse(
                 id=str(r.id),
                 author_id=str(r.author_id),
+                author=_build_author(r.author),
                 rating=r.rating,
                 text=r.text,
                 created_at=r.created_at,

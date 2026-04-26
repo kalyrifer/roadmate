@@ -11,9 +11,16 @@ export interface User {
   created_at: string;
 }
 
+export interface ReviewAuthor {
+  id: string;
+  name: string;
+  avatar_url?: string;
+}
+
 export interface Review {
   id: string;
   author_id: string;
+  author?: ReviewAuthor | null;
   rating: number;
   text?: string;
   created_at: string;

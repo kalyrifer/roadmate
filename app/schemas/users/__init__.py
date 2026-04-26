@@ -2,6 +2,7 @@
 Схемы для работы с пользователями.
 """
 from app.schemas.users.schemas import (
+    ReviewAuthorInProfile,
     ReviewInProfileResponse,
     UserProfileShortResponse,
     UserResponse,
@@ -9,6 +10,7 @@ from app.schemas.users.schemas import (
 )
 
 __all__ = [
+    "ReviewAuthorInProfile",
     "ReviewInProfileResponse",
     "UserProfileShortResponse",
     "UserResponse",

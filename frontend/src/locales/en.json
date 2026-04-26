@@ -282,7 +282,10 @@
     "ratingShort": "{{count}} {{label}}",
     "yourReview": "Your review",
     "anonymous": "Participant",
+    "viewReviews": "View reviews",
+    "hideReviews": "Hide reviews",
     "showAll": "Show all",
+    "alreadyParticipating": "You are already participating in this trip",
     "delete": "Delete",
     "deleteConfirm": "Delete your review?",
     "deleteError": "Failed to delete review"
