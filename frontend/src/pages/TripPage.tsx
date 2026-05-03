@@ -431,11 +431,9 @@ export default function TripPage() {
         <div className={styles.details}>
           <div className={styles.detailItem}>
             <span className={styles.detailLabel}>{t('trips.availableSeats')}</span>
-            <span className={styles.detailValue}>{trip.available_seats} / {trip.total_seats}</span>
-          </div>
-          <div className={styles.detailItem}>
-            <span className={styles.detailLabel}>{t('trips.totalSeats')}</span>
-            <span className={styles.detailValue}>{trip.total_seats}</span>
+            <span className={styles.detailValue}>
+              {trip.available_seats} {t('trips.outOf')} {trip.total_seats}
+            </span>
           </div>
           {trip.departure_time_start && (
             <div className={styles.detailItem}>

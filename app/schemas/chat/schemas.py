@@ -117,6 +117,7 @@ class ConversationRead(ConversationBase):
     updated_at: datetime
     last_message_at: Optional[datetime] = None
     participants: list[ConversationParticipantRead] = []
+    last_message: Optional["MessageRead"] = None
     trip: Optional[dict] = None  # Flexible - can be dict with trip info or None
 
 
@@ -164,6 +165,11 @@ class ConversationCreateResponse(ConversationRead):
 class MessageCreateResponse(MessageRead):
     """Схема ответа при отправке сообщения."""
     pass
+
+
+# Резолвим forward-references (ConversationRead.last_message → MessageRead).
+ConversationRead.model_rebuild()
+ConversationCreateResponse.model_rebuild()
 
 
 # === WebSocket схемы ===
