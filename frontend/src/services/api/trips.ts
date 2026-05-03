@@ -1,10 +1,25 @@
 import { api } from './client';
 import type { Trip, TripFormData, PaginatedResponse, TripRequest, CreateRequestData } from '../../types';
 
+export type TripSortBy = 'price' | 'departure_time' | 'created_at' | 'driver_rating';
+export type TripSortOrder = 'asc' | 'desc';
+
 export interface TripSearchParams {
   from_city?: string;
   to_city?: string;
   date?: string;
+  min_price?: number;
+  max_price?: number;
+  /** "HH:MM" — начало диапазона времени отправления */
+  departure_time_start?: string;
+  /** "HH:MM" — конец диапазона времени отправления */
+  departure_time_end?: string;
+  luggage_allowed?: boolean;
+  smoking_allowed?: boolean;
+  music_allowed?: boolean;
+  pets_allowed?: boolean;
+  sort_by?: TripSortBy;
+  sort_order?: TripSortOrder;
   page?: number;
   page_size?: number;
 }

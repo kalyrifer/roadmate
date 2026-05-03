@@ -436,6 +436,8 @@ class TripRepository:
             conditions.append(Trip.luggage_allowed == filters.luggage_allowed)
         if filters.pets_allowed is not None:
             conditions.append(Trip.pets_allowed == filters.pets_allowed)
+        if filters.music_allowed is not None:
+            conditions.append(Trip.music_allowed == filters.music_allowed)
         
         # Исключение поездок, на которые уже поданы заявки
         if filters.exclude_trip_ids:

@@ -112,6 +112,7 @@ async def search_trips(
     smoking_allowed: bool | None = Query(None, description="Разрешено ли курение"),
     luggage_allowed: bool | None = Query(None, description="Разрешен ли багаж"),
     pets_allowed: bool | None = Query(None, description="Разрешены ли животные"),
+    music_allowed: bool | None = Query(None, description="Разрешена ли музыка"),
     # Сортировка
     sort_by: str = Query("departure_time", description="Поле для сортировки: price, departure_time, created_at, driver_rating"),
     sort_order: str = Query("asc", description="Направление сортировки: asc, desc"),
@@ -169,6 +170,7 @@ async def search_trips(
         smoking_allowed=smoking_allowed,
         luggage_allowed=luggage_allowed,
         pets_allowed=pets_allowed,
+        music_allowed=music_allowed,
         sort_by=sort_by,
         sort_order=sort_order,
         page=page,
