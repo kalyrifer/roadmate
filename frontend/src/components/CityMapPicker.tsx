@@ -1,7 +1,9 @@
 import { useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import { clsx } from 'clsx';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import styles from './CityMapPicker.module.css';
 
 interface CityMapPickerProps {
   fromCity: string;
@@ -10,11 +12,10 @@ interface CityMapPickerProps {
   onToCityChange: (city: string) => void;
 }
 
-// Default center - Belarus
 const DEFAULT_CENTER: [number, number] = [53.9045, 27.5615];
 const DEFAULT_ZOOM = 7;
 
-// Fix for default marker icon
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
@@ -37,26 +38,18 @@ function MapClickHandler({ onMapClick }: MapClickHandlerProps) {
 
 interface CityMarkerProps {
   position: [number, number] | null;
-  label: string;
 }
 
-function CityMarker({ position, label }: CityMarkerProps) {
+function CityMarker({ position }: CityMarkerProps) {
   const map = useMap();
-  
+
   if (position) {
     map.flyTo(position, 10);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const CustomPopup = L.popup({ closeButton: false });
-
-  return position ? (
-    <Marker position={position} opacity={0.8}>
-    </Marker>
-  ) : null;
+  return position ? <Marker position={position} opacity={0.85} /> : null;
 }
 
-// Reverse geocoding using Nominatim
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
   try {
     const response = await fetch(
@@ -67,28 +60,36 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
         },
       }
     );
-    
+
     if (!response.ok) {
       throw new Error('Geocoding failed');
     }
-    
+
     const data = await response.json();
-    
-    // Try to get city name from address
     const address = data.address;
     const city = address.city || address.town || address.village || address.municipality || address.county;
-    
+
     if (city) {
       return city;
     }
-    
-    // Fallback to display name
+
     return data.display_name?.split(',')[0] || 'Unknown location';
   } catch (error) {
     console.error('Reverse geocoding error:', error);
     return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
   }
 }
+
+const MAJOR_CITIES: { name: string; lat: number; lng: number }[] = [
+  { name: 'Минск', lat: 53.9045, lng: 27.5615 },
+  { name: 'Гомель', lat: 52.4419, lng: 30.9918 },
+  { name: 'Могилёв', lat: 53.9168, lng: 30.3449 },
+  { name: 'Витебск', lat: 55.1993, lng: 30.2046 },
+  { name: 'Гродно', lat: 53.6693, lng: 23.8151 },
+  { name: 'Брест', lat: 52.0976, lng: 23.6907 },
+  { name: 'Бобруйск', lat: 53.1428, lng: 29.2214 },
+  { name: 'Барановичи', lat: 52.7346, lng: 26.0165 },
+];
 
 export default function CityMapPicker({
   fromCity,
@@ -102,36 +103,23 @@ export default function CityMapPicker({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Predefined major cities in Belarus for quick selection
-  const majorCities: { name: string; lat: number; lng: number }[] = [
-    { name: 'Минск', lat: 53.9045, lng: 27.5615 },
-    { name: 'Гомель', lat: 52.4419, lng: 30.9918 },
-    { name: 'Могилёв', lat: 53.9168, lng: 30.3449 },
-    { name: 'Витебск', lat: 55.1993, lng: 30.2046 },
-    { name: 'Гродно', lat: 53.6693, lng: 23.8151 },
-    { name: 'Брест', lat: 52.0976, lng: 23.6907 },
-    { name: 'Бобруйск', lat: 53.1428, lng: 29.2214 },
-    { name: 'Барановичи', lat: 52.7346, lng: 26.0165 },
-  ];
-
   const handleMapClick = useCallback(async (lat: number, lng: number) => {
     if (!selectingFor) return;
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const cityName = await reverseGeocode(lat, lng);
-      
+
       if (selectingFor === 'from') {
         setFromPosition([lat, lng]);
         onFromCityChange(cityName);
-        setSelectingFor(null);
-      } else if (selectingFor === 'to') {
+      } else {
         setToPosition([lat, lng]);
         onToCityChange(cityName);
-        setSelectingFor(null);
       }
+      setSelectingFor(null);
     } catch (err) {
       setError('Не удалось определить город');
     } finally {
@@ -139,216 +127,71 @@ export default function CityMapPicker({
     }
   }, [selectingFor, onFromCityChange, onToCityChange]);
 
-  const handleCityQuickSelect = useCallback(async (city: { name: string; lat: number; lng: number }, type: 'from' | 'to') => {
-    setIsLoading(true);
+  const handleCityQuickSelect = useCallback((city: { name: string; lat: number; lng: number }) => {
     setError(null);
-    
-    try {
-      if (type === 'from') {
-        setFromPosition([city.lat, city.lng]);
-        onFromCityChange(city.name);
-        setSelectingFor(null);
-      } else {
-        setToPosition([city.lat, city.lng]);
-        onToCityChange(city.name);
-        setSelectingFor(null);
-      }
-    } catch (err) {
-      setError('Не удалось выбрать город');
-    } finally {
-      setIsLoading(false);
+    if (!fromCity) {
+      setFromPosition([city.lat, city.lng]);
+      onFromCityChange(city.name);
+    } else if (!toCity) {
+      setToPosition([city.lat, city.lng]);
+      onToCityChange(city.name);
+    } else {
+      setFromPosition([city.lat, city.lng]);
+      onFromCityChange(city.name);
     }
-  }, [onFromCityChange, onToCityChange]);
+  }, [fromCity, toCity, onFromCityChange, onToCityChange]);
 
-  const handleClearFrom = () => {
-    setFromPosition(null);
-    onFromCityChange('');
-  };
-
-  const handleClearTo = () => {
-    setToPosition(null);
-    onToCityChange('');
+  const toggleSelectingFor = (target: 'from' | 'to') => {
+    setSelectingFor((current) => (current === target ? null : target));
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* City Selection Buttons */}
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: '200px' }}>
-          <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: '#374151' }}>
-            Откуда
-          </label>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input
-              type="text"
-              value={fromCity}
-              onChange={(e) => onFromCityChange(e.target.value)}
-              placeholder="Выберите на карте или введите"
-              style={{
-                flex: 1,
-                padding: '10px 14px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '0.875rem',
-              }}
-            />
-            {fromPosition && (
-              <button
-                type="button"
-                onClick={handleClearFrom}
-                style={{
-                  padding: '8px 12px',
-                  background: '#fee2e2',
-                  border: '1px solid #fecaca',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  color: '#dc2626',
-                }}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => setSelectingFor('from')}
-            disabled={isLoading}
-            style={{
-              marginTop: '8px',
-              padding: '8px 16px',
-              background: selectingFor === 'from' ? '#2563eb' : '#eff6ff',
-              color: selectingFor === 'from' ? '#white' : '#2563eb',
-              border: '1px solid #2563eb',
-              borderRadius: '6px',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-              opacity: isLoading ? 0.7 : 1,
-            }}
-          >
-            {selectingFor === 'from' ? 'Нажмите на карту...' : 'Указать на карте'}
-          </button>
-        </div>
-
-        <div style={{ flex: 1, minWidth: '200px' }}>
-          <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: '#374151' }}>
-            Куда
-          </label>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input
-              type="text"
-              value={toCity}
-              onChange={(e) => onToCityChange(e.target.value)}
-              placeholder="Выберите на карте или введите"
-              style={{
-                flex: 1,
-                padding: '10px 14px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '0.875rem',
-              }}
-            />
-            {toPosition && (
-              <button
-                type="button"
-                onClick={handleClearTo}
-                style={{
-                  padding: '8px 12px',
-                  background: '#fee2e2',
-                  border: '1px solid #fecaca',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  color: '#dc2626',
-                }}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => setSelectingFor('to')}
-            disabled={isLoading}
-            style={{
-              marginTop: '8px',
-              padding: '8px 16px',
-              background: selectingFor === 'to' ? '#2563eb' : '#eff6ff',
-              color: selectingFor === 'to' ? '#white' : '#2563eb',
-              border: '1px solid #2563eb',
-              borderRadius: '6px',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-              opacity: isLoading ? 0.7 : 1,
-            }}
-          >
-            {selectingFor === 'to' ? 'Нажмите на карту...' : 'Указать на карте'}
-          </button>
-        </div>
+    <div className={styles.wrapper}>
+      <div className={styles.actions}>
+        <button
+          type="button"
+          onClick={() => toggleSelectingFor('from')}
+          disabled={isLoading}
+          className={clsx(styles.actionButton, selectingFor === 'from' && styles.actionButtonActive)}
+          aria-pressed={selectingFor === 'from'}
+        >
+          <span className={styles.dotFrom} />
+          {selectingFor === 'from' ? 'Кликните по карте, чтобы выбрать «Откуда»' : 'Указать «Откуда» на карте'}
+        </button>
+        <button
+          type="button"
+          onClick={() => toggleSelectingFor('to')}
+          disabled={isLoading}
+          className={clsx(styles.actionButton, selectingFor === 'to' && styles.actionButtonActive)}
+          aria-pressed={selectingFor === 'to'}
+        >
+          <span className={styles.dotTo} />
+          {selectingFor === 'to' ? 'Кликните по карте, чтобы выбрать «Куда»' : 'Указать «Куда» на карте'}
+        </button>
       </div>
 
-      {/* Quick City Selection */}
-      {!selectingFor && (
-        <div>
-          <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '8px' }}>
-            Или выберите из крупных городов:
-          </p>
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-            {majorCities.map((city) => (
-              <button
-                key={city.name}
-                type="button"
-                onClick={() => {
-                  if (!fromCity) {
-                    handleCityQuickSelect(city, 'from');
-                  } else if (!toCity) {
-                    handleCityQuickSelect(city, 'to');
-                  } else {
-                    handleCityQuickSelect(city, 'from');
-                  }
-                }}
-                style={{
-                  padding: '6px 12px',
-                  background: '#f3f4f6',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '16px',
-                  cursor: 'pointer',
-                  fontSize: '0.75rem',
-                  color: '#374151',
-                }}
-              >
-                {city.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      <div className={styles.chipsRow}>
+        <span className={styles.chipsLabel}>Популярные города:</span>
+        {MAJOR_CITIES.map((city) => (
+          <button
+            key={city.name}
+            type="button"
+            className={styles.cityChip}
+            onClick={() => handleCityQuickSelect(city)}
+          >
+            {city.name}
+          </button>
+        ))}
+      </div>
 
-      {/* Map */}
-      <div style={{
-        height: selectingFor ? '350px' : '250px',
-        border: '1px solid #e5e7eb',
-        borderRadius: '12px',
-        overflow: 'hidden',
-        position: 'relative',
-      }}>
+      <div className={clsx(styles.mapBox, selectingFor && styles.mapBoxActive)}>
         {selectingFor && (
-          <div style={{
-            position: 'absolute',
-            top: '10px',
-            left: '10px',
-            zIndex: 1000,
-            background: 'white',
-            padding: '8px 12px',
-            borderRadius: '8px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-            fontSize: '0.875rem',
-            fontWeight: 500,
-          }}>
-            {selectingFor === 'from' ? '��� Выберите место отправления' : '📍 Выберите место прибытия'}
+          <div className={styles.mapBadge}>
+            <span className={selectingFor === 'from' ? styles.dotFrom : styles.dotTo} />
+            {selectingFor === 'from' ? 'Выберите место отправления' : 'Выберите место прибытия'}
           </div>
         )}
-        
+
         <MapContainer
           center={DEFAULT_CENTER}
           zoom={DEFAULT_ZOOM}
@@ -361,16 +204,12 @@ export default function CityMapPicker({
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <MapClickHandler onMapClick={handleMapClick} />
-          {fromPosition && <CityMarker position={fromPosition} label={fromCity || 'Откуда'} />}
-          {toPosition && <CityMarker position={toPosition} label={toCity || 'Куда'} />}
+          {fromPosition && <CityMarker position={fromPosition} />}
+          {toPosition && <CityMarker position={toPosition} />}
         </MapContainer>
       </div>
 
-      {error && (
-        <div style={{ color: '#dc2626', fontSize: '0.875rem' }}>
-          {error}
-        </div>
-      )}
+      {error && <div className={styles.error}>{error}</div>}
     </div>
   );
 }
