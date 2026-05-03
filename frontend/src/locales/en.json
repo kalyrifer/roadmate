@@ -203,14 +203,24 @@
   },
   "chat": {
     "title": "Messages",
+    "subtitle": "One chat per trip with all participants",
     "noConversations": "No messages",
     "empty": "You don't have any messages yet",
-    "noMessages": "No messages",
+    "emptyHint": "A chat will appear automatically when you create or join a trip.",
+    "noSearchResults": "Nothing found",
+    "searchPlaceholder": "Search by route, participant or message",
+    "noMessages": "No messages yet",
+    "firstMessageHint": "Send the first message to your trip companions.",
     "typeMessage": "Type a message...",
     "send": "Send",
     "sendMessage": "Type a message",
     "newChat": "New chat",
-    "yesterday": "Yesterday"
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "you": "You",
+    "viewTrip": "Trip details",
+    "participant": "Participant",
+    "unread": "Unread messages"
   },
   "notifications": {
     "title": "Notifications",
