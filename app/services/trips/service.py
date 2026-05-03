@@ -218,8 +218,8 @@ class TripService:
         Raises:
             HTTPException: 404 если поездка не найдена
         """
-        from app.models.requests.model import TripRequestStatus
-        from app.repositories.requests.repository import TripRequestRepository
+        from app.models.requests.model import TripRequest, TripRequestStatus
+        from sqlalchemy import func, select
         
         trip = await self.trip_repo.get_by_id_with_driver(trip_id)
         
@@ -231,6 +231,23 @@ class TripService:
         
         # Формируем ответ
         trip_data = TripResponse.from_orm(trip)
+
+        # Считаем фактически забронированные места по подтверждённым заявкам,
+        # чтобы available_seats всегда соответствовал реальному состоянию,
+        # даже если хранимое значение разошлось с заявками.
+        if self._db is not None:
+            booked_seats_result = await self._db.execute(
+                select(func.coalesce(func.sum(TripRequest.seats_requested), 0))
+                .where(
+                    TripRequest.trip_id == trip_id,
+                    TripRequest.status == TripRequestStatus.CONFIRMED,
+                    TripRequest.deleted_at.is_(None),
+                )
+            )
+            booked_seats = int(booked_seats_result.scalar() or 0)
+            derived_available = max(0, trip.total_seats - booked_seats)
+            if trip_data.available_seats != derived_available:
+                trip_data = trip_data.model_copy(update={"available_seats": derived_available})
         
         # Информация о водителе
         driver_info = None

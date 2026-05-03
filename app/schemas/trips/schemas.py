@@ -53,7 +53,8 @@ class TripSearchFilters(BaseModel):
     smoking_allowed: bool | None = Field(None, description="Разрешено ли курение")
     luggage_allowed: bool | None = Field(None, description="Разрешен ли багаж")
     pets_allowed: bool | None = Field(None, description="Разрешены ли животные")
-    
+    music_allowed: bool | None = Field(None, description="Разрешена ли музыка")
+
     # Исключение поездок (на которые уже поданы заявки)
     exclude_trip_ids: list[str] | None = Field(None, description="ID поездок для исключения из поиска")
     

@@ -1,114 +1,293 @@
 .container {
-  padding: 16px;
-  max-width: 600px;
+  max-width: 720px;
   margin: 0 auto;
+  padding: var(--space-5) var(--space-4) var(--space-8);
 }
 
-.header {
-  margin-bottom: 16px;
+.pageHeader {
+  margin-bottom: var(--space-4);
 }
 
-.header h1 {
-  font-size: 24px;
-  font-weight: 600;
+.pageTitle {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0 0 4px;
+}
+
+.pageSubtitle {
+  font-size: var(--font-size-sm);
+  color: var(--gray-500);
   margin: 0;
+}
+
+.searchWrap {
+  position: relative;
+  margin-bottom: var(--space-4);
+}
+
+.searchIcon {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  transform: translateY(-50%);
+  color: var(--gray-400);
+  pointer-events: none;
+  display: inline-flex;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 11px 14px 11px 40px;
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  color: var(--gray-900);
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  transition: var(--transition-fast);
+}
+
+.searchInput::placeholder {
+  color: var(--gray-400);
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .card {
   display: flex;
-  gap: 12px;
-  padding: 12px;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: var(--transition-fast);
+  position: relative;
 }
 
 .card:hover {
-  background-color: var(--color-hover, #f5f5f5);
+  background: var(--gray-50);
+  transform: translateY(-1px);
+}
+
+.cardUnread {
+  background: var(--primary-light);
+}
+
+.cardUnread:hover {
+  background: var(--primary-light);
+}
+
+.avatarStack {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
 }
 
 .avatar {
-  flex-shrink: 0;
-}
-
-.avatarImg {
   width: 48px;
   height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.avatarPlaceholder {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background-color: var(--color-primary, #4a90d9);
-  color: white;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  color: var(--white);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  font-weight: 500;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 2px solid var(--white);
+  box-shadow: var(--shadow-sm);
 }
 
-.content {
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatarSecondary {
+  position: absolute;
+  left: 18px;
+  top: 6px;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--secondary) 0%, var(--primary-dark) 100%);
+}
+
+.avatarInitials {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.avatarSecondary .avatarInitials {
+  font-size: var(--font-size-sm);
+}
+
+.cardContent {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
-.topRow {
+.cardTopRow {
   display: flex;
+  align-items: baseline;
   justify-content: space-between;
-  align-items: center;
+  gap: var(--space-3);
 }
 
-.name {
+.routeTitle {
   font-weight: 600;
-  font-size: 16px;
-}
-
-.time {
-  font-size: 12px;
-  color: var(--color-text-secondary, #666);
-}
-
-.trip {
-  font-size: 14px;
-  color: var(--color-text-secondary, #666);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.date {
-  color: var(--color-primary, #4a90d9);
-  font-weight: 500;
-}
-
-.lastMessage {
-  font-size: 14px;
-  color: var(--color-text-secondary, #666);
+  font-size: var(--font-size-base);
+  color: var(--gray-900);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.emptyState {
-  text-align: center;
-  padding: 40px;
-  color: var(--color-text-secondary, #666);
+.time {
+  flex-shrink: 0;
+  font-size: var(--font-size-xs);
+  color: var(--gray-500);
+  font-weight: 500;
 }
 
-.error {
-  color: var(--color-error, #dc3545);
+.timeUnread {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs);
+  color: var(--gray-500);
+}
+
+.metaPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: var(--white);
+  color: var(--gray-700);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.cardUnread .metaPill {
+  background: var(--white);
+}
+
+.metaSeparator {
+  color: var(--gray-300);
+}
+
+.metaText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lastMessage {
+  font-size: var(--font-size-sm);
+  color: var(--gray-600);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.lastMessageUnread {
+  color: var(--gray-900);
+  font-weight: 500;
+}
+
+.lastSender {
+  color: var(--gray-500);
+}
+
+.lastMessageUnread .lastSender {
+  color: var(--gray-700);
+}
+
+.unreadDot {
+  position: absolute;
+  top: 50%;
+  right: var(--space-4);
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-light);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  padding: 20px;
+  padding: var(--space-8) var(--space-4);
+  color: var(--gray-500);
+}
+
+.emptyIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 88px;
+  border-radius: var(--radius-full);
+  background: var(--gray-100);
+  color: var(--gray-400);
+  margin-bottom: var(--space-4);
+}
+
+.emptyTitle {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--gray-700);
+  margin: 0 0 var(--space-2);
+}
+
+.emptyHint {
+  font-size: var(--font-size-sm);
+  color: var(--gray-500);
+  max-width: 320px;
+  margin: 0;
+}
+
+.errorCard {
+  padding: var(--space-4);
+  text-align: center;
+  color: var(--error);
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: var(--space-4) var(--space-3) var(--space-6);
+  }
+  .card {
+    padding: var(--space-3);
+  }
+  .pageTitle {
+    font-size: var(--font-size-xl);
+  }
 }

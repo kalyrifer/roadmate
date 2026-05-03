@@ -36,6 +36,13 @@ export interface Conversation {
   trip?: TripInfo;
 }
 
+export interface ConversationParticipantUser {
+  id: string;
+  first_name: string;
+  last_name: string;
+  avatar_url?: string;
+}
+
 export interface ConversationParticipant {
   id: string;
   conversation_id: string;
@@ -43,6 +50,7 @@ export interface ConversationParticipant {
   is_muted: boolean;
   last_read_message_id?: string;
   joined_at: string;
+  user?: ConversationParticipantUser;
 }
 
 export interface ConversationListResponse {

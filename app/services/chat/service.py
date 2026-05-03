@@ -340,10 +340,10 @@ class ChatService:
                     }
                 participants.append(ConversationParticipantRead(**p_data))
             
-            # Получаем последнее сообщение
+            # Получаем последнее сообщение (relationship не отсортирован — берём максимум по created_at)
             last_message = None
             if conv.messages:
-                latest = conv.messages[0]
+                latest = max(conv.messages, key=lambda m: m.created_at)
                 last_message = MessageRead(
                     id=latest.id,
                     conversation_id=latest.conversation_id,
