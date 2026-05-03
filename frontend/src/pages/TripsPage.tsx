@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Card, Input, Skeleton } from '../components/ui';
@@ -13,10 +13,16 @@ import styles from './TripsPage.module.css';
 export default function TripsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [urlSearchParams, setUrlSearchParams] = useSearchParams();
   const currentUser = useAuthStore((state) => state.user);
-  const [searchParams, setSearchParams] = useState<TripSearchParams>({});
-  const [fromCityInput, setFromCityInput] = useState(searchParams.from_city || '');
-  const [toCityInput, setToCityInput] = useState(searchParams.to_city || '');
+  const [searchParams, setSearchParams] = useState<TripSearchParams>(() => ({
+    from_city: urlSearchParams.get('from_city') || undefined,
+    to_city: urlSearchParams.get('to_city') || undefined,
+    date: urlSearchParams.get('date') || undefined,
+  }));
+  const [fromCityInput, setFromCityInput] = useState(() => urlSearchParams.get('from_city') || '');
+  const [toCityInput, setToCityInput] = useState(() => urlSearchParams.get('to_city') || '');
+  const [dateInput, setDateInput] = useState(() => urlSearchParams.get('date') || '');
 
   const { data: tripsData, isLoading, error } = useQuery({
     queryKey: ['trips', searchParams],
@@ -43,13 +49,17 @@ export default function TripsPage() {
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const dateValue = formData.get('date') as string;
-    setSearchParams({
-      from_city: fromCityInput || formData.get('from') as string || undefined,
-      to_city: toCityInput || formData.get('to') as string || undefined,
-      date: dateValue || undefined,
-    });
+    const nextParams: TripSearchParams = {
+      from_city: fromCityInput || undefined,
+      to_city: toCityInput || undefined,
+      date: dateInput || undefined,
+    };
+    setSearchParams(nextParams);
+    const next = new URLSearchParams();
+    if (nextParams.from_city) next.set('from_city', nextParams.from_city);
+    if (nextParams.to_city) next.set('to_city', nextParams.to_city);
+    if (nextParams.date) next.set('date', nextParams.date);
+    setUrlSearchParams(next, { replace: true });
   };
 
   const handleFromCityChange = (city: string) => {
@@ -110,7 +120,8 @@ export default function TripsPage() {
                 name="date"
                 type="date"
                 label={t('trips.date')}
-                defaultValue={searchParams.date}
+                value={dateInput}
+                onChange={(e) => setDateInput(e.target.value)}
               />
             </div>
             <Button type="submit" variant="primary">
