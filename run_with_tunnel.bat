@@ -97,13 +97,28 @@ if "%PORT_BUSY%"=="1" (
 )
 
 :run
-echo [1/4] Starting backend (FastAPI on port 8000) in a new window...
+echo [1/5] Starting backend (FastAPI on port 8000) in a new window...
 echo       (live output also written to %BACKEND_LOG%)
 start "RoadMate Backend" powershell -NoExit -NoProfile -ExecutionPolicy Bypass -File "%RUN_LOGGED%" -LogPath "%BACKEND_LOG%" -WorkDir "%ROOT%" "%PY%" "-m" "uvicorn" "app.main:app" "--host" "0.0.0.0" "--port" "8000"
 
-echo [2/4] Starting frontend (Vite on port 5173) in a new window...
+echo [2/5] Building frontend (vite build) ...
+echo       Vite dev server is unsafe to share via cloudflared because dynamic
+echo       ES module imports of /src/*.tsx fail through the tunnel. We build a
+echo       static bundle once and serve it via 'vite preview' instead.
+echo       This usually takes 10-30 seconds on a warm cache.
+pushd "%FRONT%"
+call npm run build
+if errorlevel 1 (
+    popd
+    echo [ERROR] vite build failed.
+    pause
+    exit /b 1
+)
+popd
+
+echo [3/5] Starting frontend preview (vite preview on port 5173) in a new window...
 echo       (live output also written to %FRONTEND_LOG%)
-start "RoadMate Frontend" powershell -NoExit -NoProfile -ExecutionPolicy Bypass -File "%RUN_LOGGED%" -LogPath "%FRONTEND_LOG%" -WorkDir "%FRONT%" "npm.cmd" "run" "dev"
+start "RoadMate Frontend" powershell -NoExit -NoProfile -ExecutionPolicy Bypass -File "%RUN_LOGGED%" -LogPath "%FRONTEND_LOG%" -WorkDir "%FRONT%" "npm.cmd" "run" "preview"
 
 echo.
 echo Waiting for backend at http://127.0.0.1:8000/docs ...
@@ -172,8 +187,8 @@ pause
 exit /b 1
 
 :tunnel
-echo [3/4] Starting Cloudflare tunnel for http://localhost:5173 ...
-echo [4/4] Public URL will be printed in a banner below — copy and share it.
+echo [4/5] Starting Cloudflare tunnel for http://localhost:5173 ...
+echo [5/5] Public URL will be printed in a banner below — copy and share it.
 echo.
 
 "%PY%" "%TUNNEL_RUNNER%"
