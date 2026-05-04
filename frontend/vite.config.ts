@@ -14,6 +14,14 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes) => {
+            const loc = proxyRes.headers.location;
+            if (typeof loc === 'string' && /^https?:\/\/[^/]+\//i.test(loc)) {
+              proxyRes.headers.location = loc.replace(/^https?:\/\/[^/]+/i, '');
+            }
+          });
+        },
       },
       '/ws': {
         target: 'ws://localhost:8000',
