@@ -26,7 +26,7 @@ export interface TripSearchParams {
 
 export const tripsApi = {
   search: async (params: TripSearchParams): Promise<PaginatedResponse<Trip>> => {
-    const response = await api.get<PaginatedResponse<Trip>>('/trips', { params });
+    const response = await api.get<PaginatedResponse<Trip>>('/trips/', { params });
     return response.data;
   },
 
@@ -41,7 +41,7 @@ export const tripsApi = {
       date: params.date,
       page_size: 20,
     };
-    const response = await api.get<{ items: Array<{ trip: Trip; driver: any }> }>('/trips', { params: searchParams });
+    const response = await api.get<{ items: Array<{ trip: Trip; driver: any }> }>('/trips/', { params: searchParams });
     // Backend returns { items: [{ trip, driver, ... }] }
     return response.data.items.map((item: any) => ({
       ...item.trip,
@@ -71,7 +71,7 @@ export const tripsApi = {
 
   create: async (data: TripFormData): Promise<Trip> => {
     try {
-      const response = await api.post<Trip>('/trips', {
+      const response = await api.post<Trip>('/trips/', {
         ...data,
         status: 'draft',
       });

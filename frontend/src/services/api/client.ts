@@ -25,6 +25,15 @@ api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
+      const url = error.config?.url || '';
+      const isAuthEndpoint =
+        url.includes('/auth/login') || url.includes('/auth/register');
+
+      if (isAuthEndpoint) {
+        const err = new Error('AUTH_INVALID_CREDENTIALS');
+        return Promise.reject(err);
+      }
+
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
       window.location.href = '/login';

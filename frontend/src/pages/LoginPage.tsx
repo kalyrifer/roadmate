@@ -27,7 +27,11 @@ export default function LoginPage() {
       navigate('/');
     },
     onError: (err: Error) => {
-      setError(err.message || t('errors.loginFailed'));
+      if (err.message === 'AUTH_INVALID_CREDENTIALS') {
+        setError(t('auth.invalidCredentials'));
+      } else {
+        setError(err.message || t('errors.loginFailed'));
+      }
     },
   });
 

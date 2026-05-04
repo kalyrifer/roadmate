@@ -80,11 +80,11 @@ function HomePage() {
                   <input
                     id="home-from"
                     type="text"
-                    placeholder={t('home.from')}
                     value={from}
                     onChange={(e) => setFrom(e.target.value)}
                     className={styles.fieldInput}
                     autoComplete="off"
+                    aria-label={t('home.from')}
                   />
                 </div>
               </div>
@@ -115,11 +115,11 @@ function HomePage() {
                   <input
                     id="home-to"
                     type="text"
-                    placeholder={t('home.to')}
                     value={to}
                     onChange={(e) => setTo(e.target.value)}
                     className={styles.fieldInput}
                     autoComplete="off"
+                    aria-label={t('home.to')}
                   />
                 </div>
               </div>
@@ -174,7 +174,7 @@ function HomePage() {
         </div>
         <div className={styles.statDivider} aria-hidden="true" />
         <div className={styles.statItem}>
-          <div className={styles.statValue}>50+</div>
+          <div className={styles.statValue}>500+</div>
           <div className={styles.statLabel}>{t('home.stat2')}</div>
         </div>
         <div className={styles.statDivider} aria-hidden="true" />

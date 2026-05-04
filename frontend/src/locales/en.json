@@ -84,6 +84,7 @@
   "auth": {
     "login": "Login",
     "loginSubtitle": "Sign in to your account",
+    "invalidCredentials": "Wrong email or password. Check your details and try again.",
     "register": "Register",
     "registerSubtitle": "Create a new account",
     "email": "Email",

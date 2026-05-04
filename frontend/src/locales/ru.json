@@ -83,6 +83,7 @@
   "auth": {
     "login": "Вход",
     "loginSubtitle": "Войдите в свой аккаунт",
+    "invalidCredentials": "Неверный email или пароль. Проверьте данные и попробуйте снова.",
     "register": "Регистрация",
     "registerSubtitle": "Создайте новый аккаунт",
     "email": "Email",
