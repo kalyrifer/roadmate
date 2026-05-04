@@ -172,7 +172,7 @@ async def get_current_user_optional(
         return None
     
     user_repo = UserRepository(db)
-    user = await user_repo.get_by_id(user_uuid)
+    user = await user_repo.get_user_by_id(user_uuid)
     print(f"[DEBUG get_current_user_optional] User found: {user.id if user else 'None'}")
     return user
 
