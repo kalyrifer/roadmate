@@ -1,0 +1,188 @@
+.wrap {
+  position: relative;
+  display: inline-flex;
+  width: 100%;
+}
+
+.field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--gray-50);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  color: var(--gray-900);
+  text-align: left;
+  min-height: 44px;
+}
+
+.field:hover {
+  background: var(--white);
+  border-color: var(--gray-200);
+}
+
+.field:focus-visible,
+.field[aria-expanded="true"] {
+  outline: none;
+  background: var(--white);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--gray-100);
+  color: var(--gray-500);
+  flex-shrink: 0;
+  transition: var(--transition-fast);
+}
+
+.field:hover .icon,
+.field[aria-expanded="true"] .icon {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.text {
+  flex: 1;
+  font-weight: 500;
+}
+
+.placeholder {
+  flex: 1;
+  color: var(--gray-400);
+  font-weight: 400;
+}
+
+.clear {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--gray-100);
+  color: var(--gray-600);
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.clear:hover {
+  background: var(--gray-200);
+  color: var(--gray-900);
+}
+
+.popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 60;
+  background: var(--surface);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  padding: var(--space-2);
+  animation: dpFadeIn 140ms ease-out;
+}
+
+@keyframes dpFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 480px) {
+  .popover {
+    left: auto;
+    right: 0;
+  }
+}
+
+/* Brand the rendered DayPicker via its native rdp-* classes */
+.popover :global(.rdp-root) {
+  --rdp-accent-color: var(--primary);
+  --rdp-accent-background-color: var(--primary-light);
+  --rdp-day_button-border-radius: var(--radius);
+  --rdp-day_button-border: 0;
+  --rdp-selected-border: 0;
+  --rdp-today-color: var(--primary);
+  --rdp-weekday-text-color: var(--gray-500);
+  --rdp-outside-opacity: 0.5;
+
+  font-family: inherit;
+  margin: 0;
+}
+
+.popover :global(.rdp-month_caption) {
+  text-transform: capitalize;
+  font-weight: 700;
+  color: var(--gray-900);
+  font-size: var(--font-size-base);
+}
+
+.popover :global(.rdp-weekday) {
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  font-size: var(--font-size-xs);
+}
+
+.popover :global(.rdp-button_previous),
+.popover :global(.rdp-button_next) {
+  border-radius: 50%;
+  border: 1px solid var(--gray-200);
+  background: var(--surface);
+  color: var(--gray-700);
+  transition: var(--transition-fast);
+}
+
+.popover :global(.rdp-button_previous:hover:not(:disabled)),
+.popover :global(.rdp-button_next:hover:not(:disabled)) {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.popover :global(.rdp-day_button) {
+  font-family: inherit;
+  font-weight: 500;
+  color: var(--gray-900);
+  border-radius: var(--radius);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.popover :global(.rdp-day_button:hover:not(:disabled)) {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+.popover :global(.rdp-today) :global(.rdp-day_button) {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.popover :global(.rdp-selected) :global(.rdp-day_button),
+.popover :global(.rdp-selected) :global(.rdp-day_button:hover) {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: var(--white);
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(255, 140, 66, 0.3);
+}
+
+.popover :global(.rdp-disabled) :global(.rdp-day_button) {
+  cursor: not-allowed;
+  color: var(--gray-300);
+}

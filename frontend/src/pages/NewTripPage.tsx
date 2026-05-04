@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { Button, Card, Input, Modal } from '../components/ui';
+import DatePickerInput from '../components/DatePickerInput';
 import { tripsApi } from '../services/api/trips';
 import type { TripFormData, Trip } from '../types';
 import styles from './NewTripPage.module.css';
@@ -181,13 +182,15 @@ export default function NewTripPage() {
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
                 <label htmlFor="departure_date">{t('trips.departureDate')} *</label>
-                <Input
+                <DatePickerInput
                   id="departure_date"
-                  name="departure_date"
-                  type="date"
                   value={formData.departure_date}
-                  onChange={handleChange}
-                  required
+                  onChange={(v) =>
+                    setFormData((prev) => ({ ...prev, departure_date: v }))
+                  }
+                  placeholder={t('trips.departureDate')}
+                  ariaLabel={t('trips.departureDate')}
+                  minDate={new Date()}
                 />
               </div>
               <div className={styles.formGroup}>

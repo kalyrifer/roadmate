@@ -309,6 +309,10 @@
   }
 }
 
+.dateField :global(button) {
+  min-height: 56px;
+}
+
 /* ===== Popular routes ===== */
 .popularRow {
   display: flex;

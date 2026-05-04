@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Button, Card, Input, Modal, Skeleton } from '../components/ui';
+import DatePickerInput from '../components/DatePickerInput';
 import { tripsApi } from '../services/api/trips';
 import { useAuthStore } from '../stores/auth';
 import type { TripFormData } from '../types';
@@ -223,13 +224,14 @@ export default function EditTripPage() {
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
                 <label htmlFor="departure_date">{t('trips.departureDate')} *</label>
-                <Input
+                <DatePickerInput
                   id="departure_date"
-                  name="departure_date"
-                  type="date"
                   value={formData.departure_date}
-                  onChange={handleChange}
-                  required
+                  onChange={(v) =>
+                    setFormData((prev) => ({ ...prev, departure_date: v }))
+                  }
+                  placeholder={t('trips.departureDate')}
+                  ariaLabel={t('trips.departureDate')}
                 />
               </div>
               <div className={styles.formGroup}>
