@@ -163,11 +163,16 @@ export interface CreateRequestData {
 }
 
 // ================== Notification Types ==================
-export type NotificationType = 
-  | 'request_received' 
-  | 'request_confirmed' 
-  | 'request_rejected' 
-  | 'trip_cancelled';
+export type NotificationType =
+  | 'request_new'
+  | 'request_received'
+  | 'request_confirmed'
+  | 'request_rejected'
+  | 'request_cancelled'
+  | 'trip_cancelled'
+  | 'trip_completed'
+  | 'message_new'
+  | 'system';
 
 export interface Notification {
   id: string;
