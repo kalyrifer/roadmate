@@ -98,12 +98,14 @@
   pointer-events: none;
 }
 
-.iconFrom {
-  color: var(--success);
+.iconFrom,
+.iconTo {
+  color: var(--gray-500);
 }
 
-.iconTo {
-  color: var(--danger);
+.searchInput:focus + .inputIcon,
+.inputWithIcon:focus-within .inputIcon {
+  color: var(--primary);
 }
 
 .searchInput {
@@ -598,7 +600,7 @@
 }
 
 .verified {
-  color: var(--success);
+  color: var(--primary);
   font-weight: 500;
 }
 

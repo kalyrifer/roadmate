@@ -274,3 +274,59 @@ h6 { font-size: var(--font-size-base); }
 .leaflet-marker-icon {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
+
+/* ===== Date / Time inputs — unified, on-brand ===== */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="month"] {
+  font-family: inherit;
+  color: var(--gray-900);
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+input[type="date"]::-webkit-datetime-edit,
+input[type="time"]::-webkit-datetime-edit,
+input[type="datetime-local"]::-webkit-datetime-edit {
+  color: inherit;
+  font-family: inherit;
+  padding: 0;
+}
+
+input[type="date"]:not(:focus):invalid::-webkit-datetime-edit,
+input[type="date"]:placeholder-shown::-webkit-datetime-edit {
+  color: var(--gray-400);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(54%) sepia(7%) saturate(154%) hue-rotate(176deg) brightness(96%) contrast(89%);
+  opacity: 0.7;
+  transition: opacity 0.15s ease, filter 0.15s ease;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  filter: invert(56%) sepia(86%) saturate(1100%) hue-rotate(345deg) brightness(102%) contrast(101%);
+  background: var(--primary-light);
+}
+
+input[type="date"]:focus::-webkit-calendar-picker-indicator,
+input[type="time"]:focus::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator {
+  opacity: 1;
+}
+
+input[type="date"]::-webkit-inner-spin-button,
+input[type="time"]::-webkit-inner-spin-button,
+input[type="datetime-local"]::-webkit-inner-spin-button {
+  display: none;
+}

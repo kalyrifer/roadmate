@@ -49,20 +49,24 @@
   border-color: var(--primary);
 }
 
-.dotFrom {
-  width: 10px;
-  height: 10px;
+.dotFrom,
+.dotTo {
+  width: 8px;
+  height: 8px;
   border-radius: var(--radius-full);
-  background: var(--success);
+  background: var(--gray-400);
   flex-shrink: 0;
 }
 
+.dotFrom {
+  background: var(--primary);
+}
+
 .dotTo {
+  background: var(--gray-400);
+  border: 2px solid var(--primary);
   width: 10px;
   height: 10px;
-  border-radius: var(--radius-full);
-  background: var(--danger);
-  flex-shrink: 0;
 }
 
 .chipsRow {

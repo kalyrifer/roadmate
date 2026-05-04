@@ -68,13 +68,18 @@ function HomePage() {
           <form onSubmit={handleSearch} className={styles.searchCard}>
             <div className={styles.searchRow}>
               <div className={styles.fieldGroup}>
-                <span className={`${styles.fieldDot} ${styles.fieldDotFrom}`} aria-hidden="true" />
+                <span className={styles.fieldDot} aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                </span>
                 <div className={styles.fieldBody}>
                   <label htmlFor="home-from" className={styles.fieldLabel}>{t('home.from')}</label>
                   <input
                     id="home-from"
                     type="text"
-                    placeholder={t('home.fromPlaceholder')}
+                    placeholder={t('home.from')}
                     value={from}
                     onChange={(e) => setFrom(e.target.value)}
                     className={styles.fieldInput}
@@ -99,13 +104,17 @@ function HomePage() {
               </button>
 
               <div className={styles.fieldGroup}>
-                <span className={`${styles.fieldDot} ${styles.fieldDotTo}`} aria-hidden="true" />
+                <span className={styles.fieldDot} aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 22V4M4 4h13l-2 4 2 4H4" />
+                  </svg>
+                </span>
                 <div className={styles.fieldBody}>
                   <label htmlFor="home-to" className={styles.fieldLabel}>{t('home.to')}</label>
                   <input
                     id="home-to"
                     type="text"
-                    placeholder={t('home.toPlaceholder')}
+                    placeholder={t('home.to')}
                     value={to}
                     onChange={(e) => setTo(e.target.value)}
                     className={styles.fieldInput}
@@ -244,7 +253,7 @@ function HomePage() {
 
         <div className={styles.featureGrid}>
           <div className={styles.featureCard}>
-            <div className={`${styles.featureIcon} ${styles.featureIconOrange}`} aria-hidden="true">
+            <div className={styles.featureIcon} aria-hidden="true">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z" />
                 <circle cx="12" cy="10" r="3" />
@@ -254,7 +263,7 @@ function HomePage() {
             <p className={styles.featureText}>{t('home.feature1Desc')}</p>
           </div>
           <div className={styles.featureCard}>
-            <div className={`${styles.featureIcon} ${styles.featureIconBlue}`} aria-hidden="true">
+            <div className={styles.featureIcon} aria-hidden="true">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />
                 <path d="M9 12l2 2 4-4" />
@@ -264,7 +273,7 @@ function HomePage() {
             <p className={styles.featureText}>{t('home.feature2Desc')}</p>
           </div>
           <div className={styles.featureCard}>
-            <div className={`${styles.featureIcon} ${styles.featureIconGreen}`} aria-hidden="true">
+            <div className={styles.featureIcon} aria-hidden="true">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
@@ -274,7 +283,7 @@ function HomePage() {
             <p className={styles.featureText}>{t('home.feature3Desc')}</p>
           </div>
           <div className={styles.featureCard}>
-            <div className={`${styles.featureIcon} ${styles.featureIconPurple}`} aria-hidden="true">
+            <div className={styles.featureIcon} aria-hidden="true">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="1" x2="12" y2="23" />
                 <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />

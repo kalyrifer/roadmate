@@ -90,8 +90,8 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--success);
-  box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.18);
+  background: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-light);
   animation: pulse 2s ease-in-out infinite;
 }
 
@@ -179,28 +179,35 @@
 }
 
 .fieldDot {
-  width: 10px;
-  height: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   flex-shrink: 0;
+  background: var(--gray-100);
+  color: var(--gray-500);
+  transition: var(--transition-fast);
 }
 
-.fieldDotFrom {
-  background: var(--success);
-  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.18);
-}
-
-.fieldDotTo {
-  background: var(--danger);
-  box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.18);
+.fieldGroup:focus-within .fieldDot,
+.fieldGroup:focus-within .fieldIcon {
+  background: var(--primary-light);
+  color: var(--primary);
 }
 
 .fieldIcon {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--secondary);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--gray-100);
+  color: var(--gray-500);
   flex-shrink: 0;
+  transition: var(--transition-fast);
 }
 
 .fieldBody {
@@ -583,10 +590,15 @@
   border-radius: var(--radius);
 }
 
-.featureIconOrange { background: var(--primary-light); color: var(--primary); }
-.featureIconBlue { background: var(--secondary-light); color: var(--secondary); }
-.featureIconGreen { background: rgba(40, 167, 69, 0.12); color: var(--success); }
-.featureIconPurple { background: rgba(124, 77, 255, 0.12); color: #7c4dff; }
+.featureIcon {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.featureCard:hover .featureIcon {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: var(--white);
+}
 
 .featureTitle {
   font-size: var(--font-size-lg);
