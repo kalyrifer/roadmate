@@ -75,18 +75,16 @@ function HomePage() {
                     <circle cx="12" cy="10" r="3" />
                   </svg>
                 </span>
-                <div className={styles.fieldBody}>
-                  <label htmlFor="home-from" className={styles.fieldLabel}>{t('home.from')}</label>
-                  <input
-                    id="home-from"
-                    type="text"
-                    value={from}
-                    onChange={(e) => setFrom(e.target.value)}
-                    className={styles.fieldInput}
-                    autoComplete="off"
-                    aria-label={t('home.from')}
-                  />
-                </div>
+                <input
+                  id="home-from"
+                  type="text"
+                  value={from}
+                  onChange={(e) => setFrom(e.target.value)}
+                  className={styles.fieldInput}
+                  autoComplete="off"
+                  placeholder={t('home.from')}
+                  aria-label={t('home.from')}
+                />
               </div>
 
               <button
@@ -110,18 +108,16 @@ function HomePage() {
                     <path d="M4 22V4M4 4h13l-2 4 2 4H4" />
                   </svg>
                 </span>
-                <div className={styles.fieldBody}>
-                  <label htmlFor="home-to" className={styles.fieldLabel}>{t('home.to')}</label>
-                  <input
-                    id="home-to"
-                    type="text"
-                    value={to}
-                    onChange={(e) => setTo(e.target.value)}
-                    className={styles.fieldInput}
-                    autoComplete="off"
-                    aria-label={t('home.to')}
-                  />
-                </div>
+                <input
+                  id="home-to"
+                  type="text"
+                  value={to}
+                  onChange={(e) => setTo(e.target.value)}
+                  className={styles.fieldInput}
+                  autoComplete="off"
+                  placeholder={t('home.to')}
+                  aria-label={t('home.to')}
+                />
               </div>
 
               <DatePickerInput

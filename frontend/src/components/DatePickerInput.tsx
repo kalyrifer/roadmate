@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { DayPicker } from 'react-day-picker';
 import { ru, enUS } from 'date-fns/locale';
 import { format, parseISO, isValid } from 'date-fns';
@@ -28,16 +29,67 @@ export default function DatePickerInput({
   const { i18n, t } = useTranslation();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number; width: number } | null>(null);
 
   const locale = i18n.language === 'ru' ? ru : enUS;
   const selected = value && isValid(parseISO(value)) ? parseISO(value) : undefined;
   const displayFormat = i18n.language === 'ru' ? 'd MMM yyyy' : 'PP';
   const displayValue = selected ? format(selected, displayFormat, { locale }) : '';
 
+  // Position the portalled popover relative to the trigger button.
+  // Recomputes on open + on scroll/resize so the calendar tracks the
+  // input even when it's near the bottom of the viewport.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const updatePosition = () => {
+      const trigger = wrapRef.current;
+      if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const popover = popoverRef.current;
+      const popoverHeight = popover?.offsetHeight ?? 360;
+      const popoverWidth = popover?.offsetWidth ?? rect.width;
+      const margin = 8;
+      const viewportH = window.innerHeight;
+      const viewportW = window.innerWidth;
+
+      // Prefer below; flip above if there's not enough room below
+      // and there's more room above.
+      const spaceBelow = viewportH - rect.bottom;
+      const spaceAbove = rect.top;
+      let top = rect.bottom + margin;
+      if (spaceBelow < popoverHeight + margin && spaceAbove > spaceBelow) {
+        top = Math.max(margin, rect.top - popoverHeight - margin);
+      } else {
+        // Clamp so it stays on screen even if it doesn't fit perfectly.
+        top = Math.min(top, viewportH - popoverHeight - margin);
+        top = Math.max(margin, top);
+      }
+
+      let left = rect.left;
+      if (left + popoverWidth > viewportW - margin) {
+        left = Math.max(margin, viewportW - popoverWidth - margin);
+      }
+
+      setPopoverPos({ top, left, width: rect.width });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const onDocClick = (e: MouseEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (wrapRef.current?.contains(target)) return;
+      if (popoverRef.current?.contains(target)) return;
+      setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
@@ -104,19 +156,35 @@ export default function DatePickerInput({
         )}
       </button>
 
-      {open && (
-        <div className={styles.popover} role="dialog">
-          <DayPicker
-            mode="single"
-            selected={selected}
-            onSelect={handleSelect}
-            locale={locale}
-            weekStartsOn={1}
-            disabled={minDate ? { before: minDate } : undefined}
-            showOutsideDays
-          />
-        </div>
-      )}
+      {open &&
+        createPortal(
+          <div
+            ref={popoverRef}
+            className={styles.popover}
+            role="dialog"
+            style={
+              popoverPos
+                ? {
+                    position: 'fixed',
+                    top: popoverPos.top,
+                    left: popoverPos.left,
+                    minWidth: popoverPos.width,
+                  }
+                : { position: 'fixed', visibility: 'hidden' }
+            }
+          >
+            <DayPicker
+              mode="single"
+              selected={selected}
+              onSelect={handleSelect}
+              locale={locale}
+              weekStartsOn={1}
+              disabled={minDate ? { before: minDate } : undefined}
+              showOutsideDays
+            />
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
