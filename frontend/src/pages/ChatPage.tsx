@@ -114,6 +114,29 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messagesData?.items]);
 
+  // Mark conversation as read whenever the latest message changes.
+  // This updates the user's last_read_message_id on the backend so the
+  // chat list no longer shows the conversation as unread/orange.
+  const lastReadRef = useRef<string | null>(null);
+  useEffect(() => {
+    const items = messagesData?.items;
+    if (!id || !items || items.length === 0) return;
+    const lastMessage = items[items.length - 1];
+    if (!lastMessage || !lastMessage.id) return;
+    if (lastReadRef.current === lastMessage.id) return;
+    lastReadRef.current = lastMessage.id;
+    chatApi
+      .markAsRead(id, lastMessage.id)
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        queryClient.invalidateQueries({ queryKey: ['conversation', id] });
+      })
+      .catch(() => {
+        // Silently ignore mark-as-read errors — they shouldn't block the UI.
+        lastReadRef.current = null;
+      });
+  }, [id, messagesData?.items, queryClient]);
+
   // Auto-grow textarea
   useEffect(() => {
     const ta = textareaRef.current;

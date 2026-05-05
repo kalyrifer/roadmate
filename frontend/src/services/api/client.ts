@@ -39,15 +39,24 @@ api.interceptors.response.use(
       window.location.href = '/login';
     }
     
-    // Handle 400 errors (validation errors)
-    if (error.response?.status === 400) {
+    // Handle 400/422 errors (validation errors)
+    if (error.response?.status === 400 || error.response?.status === 422) {
       const validationError = error.response.data;
       // Handle both object { detail: "..." } and plain string responses
       let errorMessage = 'Validation error';
       if (typeof validationError === 'string') {
         errorMessage = validationError;
       } else if (validationError && typeof validationError === 'object' && 'detail' in validationError) {
-        errorMessage = validationError.detail;
+        const detail = (validationError as { detail: unknown }).detail;
+        if (typeof detail === 'string') {
+          errorMessage = detail;
+        } else if (Array.isArray(detail) && detail.length > 0) {
+          // Pydantic validation error: detail is an array of {loc, msg, ...}
+          const first = detail[0] as { msg?: string };
+          if (first && typeof first.msg === 'string') {
+            errorMessage = first.msg.replace(/^Value error,\s*/i, '');
+          }
+        }
       }
       console.error('Validation error:', errorMessage);
       return Promise.reject(errorMessage);
@@ -55,8 +64,8 @@ api.interceptors.response.use(
     
     // Handle 500 errors (server errors)
     if (error.response?.status === 500) {
-      const serverError = error.response.data;
-      const errorMessage = serverError.detail || 'Server error';
+      const serverError = error.response.data as { detail?: string } | undefined;
+      const errorMessage = serverError?.detail || 'Server error';
       console.error('Server error:', errorMessage);
       return Promise.reject(errorMessage);
     }

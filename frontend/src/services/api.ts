@@ -166,10 +166,12 @@ export const usersApi = {
     if (data.phone !== undefined) formData.append('phone', data.phone);
     if (data.bio !== undefined) formData.append('bio', data.bio);
     if (data.language !== undefined) formData.append('language', data.language);
-    
-    const response = await axiosInstance.put<UserProfile>('/users/me', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+
+    // Не указываем Content-Type вручную: браузер сам выставит
+    // multipart/form-data с правильным boundary. Иначе backend (и FastAPI
+    // через cloudflared в частности) не сможет распарсить тело и вернёт
+    // 400 "Missing boundary in multipart".
+    const response = await axiosInstance.put<UserProfile>('/users/me', formData);
     return response.data;
   },
   

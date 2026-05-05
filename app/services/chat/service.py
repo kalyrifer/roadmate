@@ -556,19 +556,35 @@ class ChatService:
         self,
         conversation_id: UUID,
         user_id: UUID,
-        sender_id: UUID,
+        message_id: UUID,
     ) -> int:
-        """Отметка сообщений от отправителя как прочитанных.
+        """Отметка чата как прочитанного для текущего пользователя.
 
-        Провер��ем, что пользователь - участник чата.
+        Все сообщения, отправленные другими участниками, помечаются как
+        прочитанные, а у участника обновляется ``last_read_message_id``.
+        Это используется, когда пользователь открывает чат и хочет, чтобы
+        тот перестал считаться непрочитанным.
+
+        Args:
+            conversation_id: ID чата.
+            user_id: ID пользователя, который читает чат.
+            message_id: ID последнего сообщения чата (используется как
+                новое значение ``last_read_message_id`` участника).
         """
-        # Проверяем участие
+        # Проверяем, что пользователь - участник чата
         await self._check_conversation_participant(conversation_id, user_id)
 
-        # Отмечаем сообщения как прочитанные
-        count = await self.repository.mark_messages_as_read(
-            conversation_id,
-            sender_id,
+        # Отмечаем все сообщения от других участников как прочитанные
+        count = await self.repository.mark_conversation_messages_read(
+            conversation_id=conversation_id,
+            reader_id=user_id,
+        )
+
+        # Обновляем last_read_message_id у текущего пользователя
+        await self.repository.update_last_read_message(
+            conversation_id=conversation_id,
+            user_id=user_id,
+            message_id=message_id,
         )
 
         await self.session.flush()

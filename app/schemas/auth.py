@@ -18,6 +18,85 @@ from pydantic import (
     field_validator,
 )
 
+PASSWORD_MIN_LENGTH = 8
+
+# Чёрный список самых распространённых слабых паролей.
+# Сравнение регистронезависимое.
+WEAK_PASSWORDS: frozenset[str] = frozenset(
+    {
+        "12345678",
+        "123456789",
+        "1234567890",
+        "qwerty",
+        "qwerty123",
+        "qwertyuiop",
+        "password",
+        "password1",
+        "password123",
+        "passw0rd",
+        "111111",
+        "11111111",
+        "000000",
+        "00000000",
+        "abc12345",
+        "abcd1234",
+        "iloveyou",
+        "admin",
+        "admin123",
+        "letmein",
+        "welcome",
+        "welcome1",
+        "monkey",
+        "dragon",
+        "football",
+        "baseball",
+        "starwars",
+        "qazwsx",
+        "qazwsx123",
+        "trustno1",
+        "master",
+        "freedom",
+        "sunshine",
+        "shadow",
+        "superman",
+        "ninja",
+        "mustang",
+        # Популярные «русские» пароли
+        "пароль",
+        "пароль123",
+        "йцукен",
+        "йцукен123",
+    }
+)
+
+
+def validate_password_strength(password: str) -> str:
+    """Базовая валидация пароля.
+
+    Требования:
+    - не короче PASSWORD_MIN_LENGTH символов;
+    - содержит хотя бы одну букву и хотя бы одну цифру;
+    - не входит в список самых распространённых слабых паролей и не состоит
+      только из одной повторяющейся цифры/буквы.
+    """
+    if len(password) < PASSWORD_MIN_LENGTH:
+        raise ValueError(
+            f"Password must be at least {PASSWORD_MIN_LENGTH} characters long"
+        )
+
+    has_letter = bool(re.search(r"[A-Za-zА-Яа-яЁё]", password))
+    has_digit = bool(re.search(r"\d", password))
+    if not (has_letter and has_digit):
+        raise ValueError("Password must contain both letters and digits")
+
+    if password.lower() in WEAK_PASSWORDS:
+        raise ValueError("Password is too common, please choose a stronger one")
+
+    if len(set(password)) == 1:
+        raise ValueError("Password must not consist of a single repeated character")
+
+    return password
+
 
 class UserRegisterRequest(BaseModel):
     """
@@ -32,8 +111,11 @@ class UserRegisterRequest(BaseModel):
     )
     password: str = Field(
         ...,
-        description="Пароль пользователя (минимум 6 символов)",
-        min_length=6,
+        description=(
+            f"Пароль пользователя (минимум {PASSWORD_MIN_LENGTH} символов, "
+            "должен содержать буквы и цифры; распространённые пароли запрещены)"
+        ),
+        min_length=PASSWORD_MIN_LENGTH,
         examples=["securePassword123"],
     )
     name: str = Field(
@@ -43,6 +125,12 @@ class UserRegisterRequest(BaseModel):
         max_length=100,
         examples=["Иван"],
     )
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        """Проверяем минимальную сложность пароля."""
+        return validate_password_strength(v)
 
     @field_validator("email")
     @classmethod

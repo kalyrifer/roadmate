@@ -210,6 +210,9 @@ export default function TripPage() {
       setIsBookingModalOpen(false);
       setMessage('');
       setSeatsRequested(1);
+      showToast(t('trips.bookingRequestSent'), 'success');
+      queryClient.invalidateQueries({ queryKey: ['trip', id] });
+      queryClient.invalidateQueries({ queryKey: ['my-requests'] });
     },
     onError: (e: any) => {
       setBookingError(e?.response?.data?.detail || t('errors.serverError'));

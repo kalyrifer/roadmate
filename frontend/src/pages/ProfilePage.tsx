@@ -18,6 +18,7 @@ export default function ProfilePage() {
     language: 'ru',
   });
   const [successMessage, setSuccessMessage] = useState('');
+  const [updateError, setUpdateError] = useState('');
 
   // Загрузка профиля
   const { data: profile, isLoading, error } = useQuery<UserProfile>({
@@ -41,6 +42,18 @@ export default function ProfilePage() {
       });
       queryClient.invalidateQueries({ queryKey: ['myProfile'] });
       setTimeout(() => setSuccessMessage(''), 3000);
+    },
+    onError: (err: unknown) => {
+      let message: string | undefined;
+      if (typeof err === 'string') {
+        message = err;
+      } else if (err && typeof err === 'object') {
+        const anyErr = err as { message?: string; response?: { data?: { detail?: string } } };
+        message = anyErr.response?.data?.detail || anyErr.message;
+      }
+      setSuccessMessage('');
+      setUpdateError(message || t('profile.updateError'));
+      setTimeout(() => setUpdateError(''), 4000);
     },
   });
 
@@ -234,6 +247,13 @@ export default function ProfilePage() {
             <polyline points="22 4 12 14.01 9 11.01" />
           </svg>
           {successMessage}
+        </div>
+      )}
+
+      {/* Error message */}
+      {updateError && (
+        <div className={styles.error}>
+          {updateError}
         </div>
       )}
 

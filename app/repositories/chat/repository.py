@@ -352,6 +352,32 @@ class ChatRepository:
 
         return count
 
+    async def mark_conversation_messages_read(
+        self,
+        conversation_id: UUID,
+        reader_id: UUID,
+    ) -> int:
+        """Отметка всех сообщений в чате от других участников как прочитанных."""
+        result = await self.session.execute(
+            select(Message).where(
+                and_(
+                    Message.conversation_id == conversation_id,
+                    Message.sender_id != reader_id,
+                    Message.is_read == False,
+                )
+            )
+        )
+        messages = result.scalars().all()
+        count = 0
+        for message in messages:
+            message.is_read = True
+            count += 1
+
+        if count > 0:
+            await self.session.flush()
+
+        return count
+
     async def mark_message_as_read(
         self,
         message_id: UUID,

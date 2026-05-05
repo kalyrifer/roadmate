@@ -28,8 +28,14 @@ export default function RegisterPage() {
     onSuccess: () => {
       navigate('/');
     },
-    onError: (err: Error) => {
-      setError(err.message || t('errors.registerFailed'));
+    onError: (err: unknown) => {
+      let message: string | undefined;
+      if (typeof err === 'string') {
+        message = err;
+      } else if (err instanceof Error && err.message) {
+        message = err.message;
+      }
+      setError(message || t('errors.registerFailed'));
     },
   });
 
@@ -87,12 +93,33 @@ export default function RegisterPage() {
             label={t('auth.password')}
             type="password"
             placeholder={t('auth.passwordPlaceholder')}
-            {...register('password', { 
+            {...register('password', {
               required: t('errors.required'),
               minLength: {
-                value: 6,
-                message: t('errors.passwordMinLength')
-              }
+                value: 8,
+                message: t('errors.passwordMinLength'),
+              },
+              validate: (value) => {
+                if (!/[A-Za-zА-Яа-яЁё]/.test(value) || !/\d/.test(value)) {
+                  return t('errors.passwordWeakLettersDigits');
+                }
+                if (new Set(value).size === 1) {
+                  return t('errors.passwordWeakRepeated');
+                }
+                const common = [
+                  '12345678', '123456789', '1234567890',
+                  'qwerty', 'qwerty123', 'qwertyuiop',
+                  'password', 'password1', 'password123',
+                  'passw0rd', '11111111', '00000000',
+                  'abc12345', 'abcd1234', 'iloveyou',
+                  'admin123', 'letmein', 'welcome1',
+                  'qazwsx', 'qazwsx123', 'пароль123', 'йцукен123',
+                ];
+                if (common.includes(value.toLowerCase())) {
+                  return t('errors.passwordWeakCommon');
+                }
+                return true;
+              },
             })}
             error={errors.password?.message}
           />

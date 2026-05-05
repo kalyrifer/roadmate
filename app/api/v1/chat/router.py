@@ -425,7 +425,7 @@ async def mark_messages_read(
         await chat_service.mark_messages_as_read(
             conversation_id=conversation_id,
             user_id=current_user.id,
-            sender_id=data.message_id,
+            message_id=data.message_id,
         )
         await chat_service.session.commit()
     except ChatNotFoundError:

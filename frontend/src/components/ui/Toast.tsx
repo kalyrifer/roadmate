@@ -68,13 +68,17 @@ interface ToastItem {
 }
 
 let toastId = 0;
+let currentToasts: ToastItem[] = [];
 const listeners: ((toasts: ToastItem[]) => void)[] = [];
+
+function notifyListeners() {
+  listeners.forEach(listener => listener(currentToasts));
+}
 
 export function showToast(message: string, type: ToastType = 'success') {
   const id = ++toastId;
-  const currentToasts = getToasts();
-  const newToasts = [...currentToasts, { id, message, type }];
-  listeners.forEach(listener => listener(newToasts));
+  currentToasts = [...currentToasts, { id, message, type }];
+  notifyListeners();
   
   // Auto remove after duration
   setTimeout(() => {
@@ -83,13 +87,8 @@ export function showToast(message: string, type: ToastType = 'success') {
 }
 
 function removeToast(id: number) {
-  const currentToasts = getToasts();
-  const newToasts = currentToasts.filter(t => t.id !== id);
-  listeners.forEach(listener => listener(newToasts));
-}
-
-function getToasts(): ToastItem[] {
-  return [];
+  currentToasts = currentToasts.filter(t => t.id !== id);
+  notifyListeners();
 }
 
 export function ToastContainer() {
