@@ -109,9 +109,13 @@ export default function ChatPage() {
     },
   });
 
-  // Auto-scroll to latest message
+  // Auto-scroll to latest message — only scroll the inner messages
+  // container, not the whole page (otherwise on mobile the chat header
+  // and even the global header can get pushed off-screen).
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
   }, [messagesData?.items]);
 
   // Mark conversation as read whenever the latest message changes.

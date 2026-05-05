@@ -94,6 +94,7 @@
     "confirmPassword": "Confirm password",
     "confirmPasswordPlaceholder": "Repeat your password",
     "name": "Name",
+    "namePlaceholder": "Enter your name",
     "firstName": "First name",
     "firstNamePlaceholder": "Your first name",
     "lastName": "Last name",

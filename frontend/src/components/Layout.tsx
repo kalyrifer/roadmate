@@ -143,7 +143,7 @@ export function Layout({ children }: LayoutProps) {
             >
               {t('nav.notifications')}
               {isAuthenticated && unreadCountData && unreadCountData.unread_count > 0 && (
-                <span className={styles.notificationBadge} style={{ position: 'relative', top: 'auto', right: 'auto', marginLeft: '8px' }}>
+                <span className={styles.mobileNavBadge}>
                   {unreadCountData.unread_count > 99 ? '99+' : unreadCountData.unread_count}
                 </span>
               )}

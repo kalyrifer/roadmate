@@ -444,7 +444,11 @@
 
 @media (max-width: 640px) {
   .container {
-    height: calc(100vh - 64px);
+    /* 64px sticky header + 24+24px main padding + ~50px footer ≈ 160px.
+       Use dvh where available so iOS browser chrome doesn't cut us off. */
+    height: calc(100vh - 160px);
+    height: calc(100dvh - 160px);
+    min-height: 360px;
     border-radius: 0;
     border: none;
     box-shadow: none;
@@ -454,6 +458,14 @@
   }
   .header {
     padding: var(--space-3);
+    gap: var(--space-2);
+  }
+  .headerTitle {
+    font-size: var(--font-size-base);
+  }
+  .tripButton {
+    padding: 6px 10px;
+    font-size: var(--font-size-xs);
   }
   .messages {
     padding: var(--space-3);

@@ -93,6 +93,7 @@
     "confirmPassword": "Подтвердите пароль",
     "confirmPasswordPlaceholder": "Повторите пароль",
     "name": "Имя",
+    "namePlaceholder": "Введите ваше имя",
     "firstName": "Имя",
     "firstNamePlaceholder": "Ваше имя",
     "lastName": "Фамилия",
