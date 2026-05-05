@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { DayPicker } from 'react-day-picker';
 import { ru, enUS } from 'date-fns/locale';
 import { format, parseISO, isValid } from 'date-fns';
@@ -16,6 +17,18 @@ interface Props {
   minDate?: Date;
 }
 
+interface PopoverPos {
+  top: number;
+  left: number;
+}
+
+// Approximate popover footprint used for the very first render before we have
+// real measurements. After mount we re-measure with getBoundingClientRect.
+const POPOVER_FALLBACK_W = 320;
+const POPOVER_FALLBACK_H = 360;
+const VIEWPORT_GUTTER = 8;
+const TRIGGER_GAP = 8;
+
 export default function DatePickerInput({
   id,
   value,
@@ -27,17 +40,64 @@ export default function DatePickerInput({
 }: Props) {
   const { i18n, t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const wrapRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<PopoverPos | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   const locale = i18n.language === 'ru' ? ru : enUS;
   const selected = value && isValid(parseISO(value)) ? parseISO(value) : undefined;
   const displayFormat = i18n.language === 'ru' ? 'd MMM yyyy' : 'PP';
   const displayValue = selected ? format(selected, displayFormat, { locale }) : '';
 
+  // Position the popover via fixed coords relative to the viewport so any
+  // ancestor with overflow:hidden (e.g. HomePage hero, NewTripPage card) does
+  // not clip the bottom rows of the calendar. We also flip above the trigger
+  // when there is no room below.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const compute = () => {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+      const r = trigger.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const popH = popoverRef.current?.offsetHeight || POPOVER_FALLBACK_H;
+      const popW = popoverRef.current?.offsetWidth || POPOVER_FALLBACK_W;
+
+      const spaceBelow = vh - r.bottom;
+      const spaceAbove = r.top;
+      const flipUp =
+        spaceBelow < popH + VIEWPORT_GUTTER && spaceAbove > spaceBelow;
+
+      let top = flipUp ? r.top - popH - TRIGGER_GAP : r.bottom + TRIGGER_GAP;
+      let left = r.left;
+
+      if (left + popW > vw - VIEWPORT_GUTTER) left = vw - popW - VIEWPORT_GUTTER;
+      if (left < VIEWPORT_GUTTER) left = VIEWPORT_GUTTER;
+      if (top < VIEWPORT_GUTTER) top = VIEWPORT_GUTTER;
+      if (top + popH > vh - VIEWPORT_GUTTER) top = vh - popH - VIEWPORT_GUTTER;
+
+      setPos({ top, left });
+    };
+    compute();
+    // Re-measure once the popover has actually mounted with real dimensions.
+    const raf = window.requestAnimationFrame(compute);
+    window.addEventListener('resize', compute);
+    window.addEventListener('scroll', compute, true);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.removeEventListener('resize', compute);
+      window.removeEventListener('scroll', compute, true);
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const onDocClick = (e: MouseEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target)) return;
+      if (popoverRef.current?.contains(target)) return;
+      setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
@@ -50,6 +110,12 @@ export default function DatePickerInput({
     };
   }, [open]);
 
+  // Reset cached position when closed so the first frame after the next open
+  // does not flash at stale coordinates.
+  useEffect(() => {
+    if (!open) setPos(null);
+  }, [open]);
+
   const handleSelect = (day: Date | undefined) => {
     if (!day) {
       onChange('');
@@ -60,10 +126,11 @@ export default function DatePickerInput({
   };
 
   return (
-    <div className={`${styles.wrap} ${className ?? ''}`} ref={wrapRef}>
+    <div className={`${styles.wrap} ${className ?? ''}`}>
       <button
         type="button"
         id={id}
+        ref={triggerRef}
         className={styles.field}
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="dialog"
@@ -104,19 +171,33 @@ export default function DatePickerInput({
         )}
       </button>
 
-      {open && (
-        <div className={styles.popover} role="dialog">
-          <DayPicker
-            mode="single"
-            selected={selected}
-            onSelect={handleSelect}
-            locale={locale}
-            weekStartsOn={1}
-            disabled={minDate ? { before: minDate } : undefined}
-            showOutsideDays
-          />
-        </div>
-      )}
+      {open &&
+        createPortal(
+          <div
+            ref={popoverRef}
+            className={styles.popover}
+            role="dialog"
+            style={{
+              position: 'fixed',
+              top: pos?.top ?? -9999,
+              left: pos?.left ?? -9999,
+              right: 'auto',
+              bottom: 'auto',
+              visibility: pos ? 'visible' : 'hidden',
+            }}
+          >
+            <DayPicker
+              mode="single"
+              selected={selected}
+              onSelect={handleSelect}
+              locale={locale}
+              weekStartsOn={1}
+              disabled={minDate ? { before: minDate } : undefined}
+              showOutsideDays
+            />
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
