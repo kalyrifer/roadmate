@@ -3,7 +3,7 @@ Dependencies для FastAPI.
 
 Содержит зависимости для:
 - Получения текущего пользователя
-- Получения администратора
+
 
 """
 from __future__ import annotations
