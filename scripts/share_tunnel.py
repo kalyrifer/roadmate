@@ -56,7 +56,40 @@ def _print_banner(url: str) -> None:
     print(" Tunnel stays alive while THIS window is open.", flush=True)
     print(" Press Ctrl+C here to stop the tunnel.", flush=True)
     print(line, flush=True)
+    print(" NOTE: every restart of this script generates a NEW URL.", flush=True)
+    print(" Any *.trycloudflare.com URL from a previous run is DEAD.", flush=True)
+    print(line, flush=True)
     print("", flush=True)
+
+
+def _print_dead_banner(last_url: str | None) -> None:
+    line = "=" * BANNER_WIDTH
+    print("", flush=True)
+    print(line, flush=True)
+    print(" TUNNEL STOPPED.", flush=True)
+    if last_url:
+        print(f"   {last_url}", flush=True)
+        print(" ^ this URL is now DEAD and will NOT load anywhere.", flush=True)
+    print(" Cloudflare quick-tunnels live only while cloudflared is running.", flush=True)
+    print(" Re-run run_with_tunnel.bat to get a NEW public URL.", flush=True)
+    print(line, flush=True)
+    print("", flush=True)
+
+
+def _save_url_file(url_file: Path, url: str) -> None:
+    try:
+        url_file.parent.mkdir(parents=True, exist_ok=True)
+        url_file.write_text(url + "\n", encoding="utf-8")
+    except OSError as exc:
+        print(f"[warn] could not write {url_file}: {exc}", flush=True)
+
+
+def _clear_url_file(url_file: Path) -> None:
+    try:
+        if url_file.exists():
+            url_file.unlink()
+    except OSError:
+        pass
 
 
 def main() -> int:
@@ -72,6 +105,10 @@ def main() -> int:
         return 1
 
     target = os.environ.get("ROADMATE_TUNNEL_URL", DEFAULT_TARGET)
+
+    url_file = repo_root / "logs" / "tunnel_url.txt"
+    # wipe the URL from a previous session before we know the new one
+    _clear_url_file(url_file)
 
     print(f"Starting Cloudflare quick tunnel for {target} ...", flush=True)
     print("This usually takes 5-30 seconds. Please wait.", flush=True)
@@ -106,6 +143,7 @@ def main() -> int:
                 match = URL_RE.search(line)
                 if match:
                     found_url = match.group(0)
+                    _save_url_file(url_file, found_url)
                     _print_banner(found_url)
         proc.wait()
     except KeyboardInterrupt:
@@ -119,6 +157,9 @@ def main() -> int:
             proc.wait(timeout=5)
         except subprocess.TimeoutExpired:
             proc.kill()
+
+    # tunnel is gone — clear the URL file so a stale value doesn't mislead
+    _clear_url_file(url_file)
 
     rc = proc.returncode or 0
     if found_url is None and rc != 0:
@@ -136,6 +177,8 @@ def main() -> int:
             file=sys.stderr,
             flush=True,
         )
+    else:
+        _print_dead_banner(found_url)
     return rc
 
 

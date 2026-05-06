@@ -77,24 +77,41 @@ popd
 :check_ports
 if not exist "%LOG_DIR%" mkdir "%LOG_DIR%" >nul 2>&1
 
+:: --- kill leftovers from previous runs so we always start clean -----------
+echo [info] Cleaning up leftovers from previous runs (uvicorn, vite, cloudflared)...
+
+call :kill_port 8000
+call :kill_port 5173
+call :kill_proc cloudflared.exe
+
+:: stale tunnel URL files from previous runs would mislead the user — clear them
+if exist "%LOG_DIR%\tunnel_url.txt" del /q "%LOG_DIR%\tunnel_url.txt" >nul 2>&1
+
+:: short pause so the OS frees the sockets before we try to bind again
+ping -n 2 127.0.0.1 >nul 2>&1
+
+:: re-check; if a port is *still* busy we genuinely cannot continue
 call :port_in_use 8000
 if "%PORT_BUSY%"=="1" (
-    echo [WARN] Port 8000 is already in use:
+    echo [ERROR] Port 8000 is still in use after cleanup:
     netstat -ano | findstr ":8000" | findstr "LISTENING"
-    echo If that's an old uvicorn from a previous run, close it before continuing.
-    echo Otherwise the backend will fail to bind and the tunnel will not start.
+    echo Close the process holding port 8000 manually, then retry.
     echo.
     pause
+    exit /b 1
 )
 
 call :port_in_use 5173
 if "%PORT_BUSY%"=="1" (
-    echo [WARN] Port 5173 is already in use:
+    echo [ERROR] Port 5173 is still in use after cleanup:
     netstat -ano | findstr ":5173" | findstr "LISTENING"
-    echo If that's an old vite from a previous run, close it before continuing.
+    echo Close the process holding port 5173 manually, then retry.
     echo.
     pause
+    exit /b 1
 )
+echo [info] Cleanup done.
+echo.
 
 :run
 echo [1/4] Starting backend (FastAPI on port 8000) in a new window...
@@ -179,7 +196,12 @@ echo.
 "%PY%" "%TUNNEL_RUNNER%"
 
 echo.
-echo Tunnel stopped.
+echo ========================================================================
+echo  Tunnel stopped.
+echo  Any URL printed above (including the *.trycloudflare.com link) is now
+echo  DEAD — Cloudflare quick-tunnels are gone the moment cloudflared exits.
+echo  Run this script again to get a NEW public URL.
+echo ========================================================================
 pause
 exit /b 0
 
@@ -192,5 +214,28 @@ exit /b 0
 set "PORT_BUSY=0"
 for /f "tokens=*" %%L in ('netstat -ano ^| findstr ":%~1" ^| findstr "LISTENING" 2^>nul') do (
     set "PORT_BUSY=1"
+)
+exit /b 0
+
+:kill_port
+:: usage: call :kill_port <port>
+:: kills every process LISTENING on the given TCP port
+set "_KP_PORT=%~1"
+for /f "tokens=5" %%P in ('netstat -ano ^| findstr ":%_KP_PORT%" ^| findstr "LISTENING" 2^>nul') do (
+    if not "%%P"=="0" (
+        echo   [kill] port %_KP_PORT% — PID %%P
+        taskkill /F /PID %%P >nul 2>&1
+    )
+)
+exit /b 0
+
+:kill_proc
+:: usage: call :kill_proc <image-name.exe>
+:: kills every process whose image name matches (e.g. cloudflared.exe)
+set "_KN_NAME=%~1"
+tasklist /FI "IMAGENAME eq %_KN_NAME%" 2>nul | findstr /I "%_KN_NAME%" >nul
+if not errorlevel 1 (
+    echo   [kill] %_KN_NAME%
+    taskkill /F /IM "%_KN_NAME%" >nul 2>&1
 )
 exit /b 0
