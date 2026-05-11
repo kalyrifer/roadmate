@@ -128,6 +128,8 @@ class TripRepository:
         for key, value in update_data.items():
             if value is not None and hasattr(trip, key):
                 setattr(trip, key, value)
+
+        trip.normalize_times()
         
         trip.updated_at = datetime.utcnow()
         

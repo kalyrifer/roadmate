@@ -733,7 +733,8 @@ export default function TripsPage() {
                       <div className={styles.routeTime}>
                         {formatDate(trip.departure_date + 'T' + trip.departure_time_start)}
                       </div>
-                      <div className={styles.routeLocation}>{trip.from_address || trip.from_city}</div>
+                      <div className={styles.routeCity}>{trip.from_city}</div>
+                      {trip.from_address && <div className={styles.routeLocation}>{trip.from_address}</div>}
                     </div>
                     <div className={styles.routeArrow}>→</div>
                     <div className={styles.routePoint}>
@@ -742,7 +743,8 @@ export default function TripsPage() {
                           ? formatDate(trip.departure_date + 'T' + trip.arrival_time)
                           : '—'}
                       </div>
-                      <div className={styles.routeLocation}>{trip.to_address || trip.to_city}</div>
+                      <div className={styles.routeCity}>{trip.to_city}</div>
+                      {trip.to_address && <div className={styles.routeLocation}>{trip.to_address}</div>}
                     </div>
                   </div>
 

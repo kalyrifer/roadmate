@@ -127,7 +127,7 @@ export default function EditTripPage() {
       setValidationError(t('errors.invalidPrice'));
       return;
     }
-    if (isNaN(seats) || seats < 1 || seats > 10) {
+    if (isNaN(seats) || seats < 1 || seats > 8) {
       setValidationError(t('errors.invalidSeats'));
       return;
     }

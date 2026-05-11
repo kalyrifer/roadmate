@@ -544,9 +544,17 @@
   margin-bottom: 4px;
 }
 
-.routeLocation {
+.routeCity {
   font-weight: 500;
   color: var(--gray-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.routeLocation {
+  color: var(--gray-600);
+  font-size: var(--font-size-sm);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -365,14 +365,16 @@ export default function TripPage() {
         <div className={styles.route}>
           <div className={styles.routePoint}>
             <div className={styles.routeTime}>{formatDate(trip.departure_date + 'T' + trip.departure_time_start)}</div>
-            <div className={styles.routeAddress}>{trip.from_address || trip.from_city}</div>
+            <div className={styles.routeCity}>{trip.from_city}</div>
+            {trip.from_address && <div className={styles.routeAddress}>{trip.from_address}</div>}
           </div>
           <div className={styles.routeDivider}>↓</div>
           <div className={styles.routePoint}>
             <div className={styles.routeTime}>
               {trip.arrival_time ? formatDate((trip.arrival_time < trip.departure_time_start ? format(addDays(new Date(trip.departure_date), 1), 'yyyy-MM-dd') : trip.departure_date) + 'T' + trip.arrival_time) : '—'}
             </div>
-            <div className={styles.routeAddress}>{trip.to_address || trip.to_city}</div>
+            <div className={styles.routeCity}>{trip.to_city}</div>
+            {trip.to_address && <div className={styles.routeAddress}>{trip.to_address}</div>}
           </div>
         </div>
 

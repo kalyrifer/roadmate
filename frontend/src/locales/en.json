@@ -129,7 +129,7 @@
     "description": "Description",
     "status": {
       "draft": "Draft",
-      "published": "Published",
+      "published": "Active",
       "active": "Active",
       "completed": "Completed",
       "cancelled": "Cancelled"
@@ -350,7 +350,7 @@
     "createTrip": "Failed to create trip",
     "arrivalBeforeDeparture": "Arrival time cannot be earlier than departure time.",
     "invalidPrice": "Enter a valid price.",
-    "invalidSeats": "Enter seats from 1 to 10."
+    "invalidSeats": "Enter seats from 1 to 8."
   },
   "reviews": {
     "reviewsTitle": "Reviews",

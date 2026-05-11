@@ -92,7 +92,7 @@ export default function NewTripPage() {
       formData.total_seats.trim() === '' ||
       !Number.isInteger(totalSeats) ||
       totalSeats < 1 ||
-      totalSeats > 10
+      totalSeats > 8
     ) {
       setValidationError(t('errors.invalidSeats'));
       return;

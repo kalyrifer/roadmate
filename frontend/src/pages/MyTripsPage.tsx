@@ -78,11 +78,13 @@ export default function MyTripsPage() {
       <div className={styles.tripRoute}>
         <div className={styles.routePoint}>
           <div className={styles.routeTime}>{formatDate(trip.departure_date + 'T' + trip.departure_time_start)}</div>
-          <div className={styles.routeLocation}>{trip.from_address || trip.from_city}</div>
+          <div className={styles.routeCity}>{trip.from_city}</div>
+          {trip.from_address && <div className={styles.routeLocation}>{trip.from_address}</div>}
         </div>
         <div className={styles.routeArrow}>→</div>
         <div className={styles.routePoint}>
-          <div className={styles.routeLocation}>{trip.to_address || trip.to_city}</div>
+          <div className={styles.routeCity}>{trip.to_city}</div>
+          {trip.to_address && <div className={styles.routeLocation}>{trip.to_address}</div>}
         </div>
       </div>
 
@@ -170,9 +172,7 @@ export default function MyTripsPage() {
           className={styles.filterSelect}
         >
           <option value="">{t('trips.allStatuses')}</option>
-          <option value="draft">{t('trips.status.draft')}</option>
           <option value="published">{t('trips.status.published')}</option>
-          <option value="active">{t('trips.status.active')}</option>
           <option value="completed">{t('trips.status.completed')}</option>
           <option value="cancelled">{t('trips.status.cancelled')}</option>
         </select>
