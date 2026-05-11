@@ -123,6 +123,7 @@
     "seats": "seats",
     "price": "Price",
     "pricePerSeat": "Price per seat",
+    "pricePerSeatByn": "Price per seats (BYN)",
     "driver": "Driver",
     "passenger": "Passenger",
     "description": "Description",
@@ -345,7 +346,10 @@
     "tripNotFound": "Trip not found",
     "updateTrip": "Failed to update trip",
     "deleteTrip": "Failed to cancel trip",
-    "createTrip": "Failed to create trip"
+    "createTrip": "Failed to create trip",
+    "arrivalBeforeDeparture": "Arrival time cannot be earlier than departure time.",
+    "invalidPrice": "Enter a valid price.",
+    "invalidSeats": "Enter seats from 1 to 10."
   },
   "reviews": {
     "reviewsTitle": "Reviews",

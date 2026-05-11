@@ -9,13 +9,20 @@ import { useAuthStore } from '../stores/auth';
 import type { TripFormData } from '../types';
 import styles from './NewTripPage.module.css';
 
+type EditTripFormData = Omit<TripFormData, 'price_per_seat' | 'total_seats'> & {
+  price_per_seat: string;
+  total_seats: string;
+};
+
+const getPriceValue = (value: string) => Number(value.replace(',', '.'));
+
 export default function EditTripPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const currentUser = useAuthStore((state) => state.user);
 
-  const [formData, setFormData] = useState<TripFormData>({
+  const [formData, setFormData] = useState<EditTripFormData>({
     from_city: '',
     from_address: '',
     to_city: '',
@@ -25,8 +32,8 @@ export default function EditTripPage() {
     departure_time_end: '',
     is_time_range: false,
     arrival_time: '',
-    price_per_seat: 0,
-    total_seats: 1,
+    price_per_seat: '0',
+    total_seats: '1',
     description: '',
     luggage_allowed: true,
     smoking_allowed: false,
@@ -39,6 +46,7 @@ export default function EditTripPage() {
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   // Load trip data
   const { data: trip, isLoading, isError } = useQuery({
@@ -66,8 +74,8 @@ export default function EditTripPage() {
         departure_time_end: trip.departure_time_end || '',
         is_time_range: trip.is_time_range || false,
         arrival_time: trip.arrival_time || '',
-        price_per_seat: trip.price_per_seat || 0,
-        total_seats: trip.total_seats || 1,
+        price_per_seat: String(trip.price_per_seat ?? 0),
+        total_seats: String(trip.total_seats ?? 1),
         description: trip.description || '',
         luggage_allowed: trip.luggage_allowed ?? true,
         smoking_allowed: trip.smoking_allowed ?? false,
@@ -106,8 +114,31 @@ export default function EditTripPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setValidationError(null);
+
+    const price = getPriceValue(formData.price_per_seat);
+    const seats = Number(formData.total_seats);
+
+    if (isNaN(price) || price < 0) {
+      setValidationError(t('errors.invalidPrice'));
+      return;
+    }
+    if (isNaN(seats) || seats < 1 || seats > 10) {
+      setValidationError(t('errors.invalidSeats'));
+      return;
+    }
+
+    if (formData.arrival_time && formData.departure_time_start) {
+      if (formData.arrival_time < formData.departure_time_start) {
+        setValidationError(t('errors.arrivalBeforeDeparture'));
+        return;
+      }
+    }
+
     updateTripMutation.mutate({
       ...formData,
+      price_per_seat: price,
+      total_seats: seats,
       departure_time_end: formData.is_time_range ? formData.departure_time_end || undefined : undefined,
       arrival_time: formData.arrival_time || undefined,
       from_address: formData.from_address || undefined,
@@ -123,7 +154,7 @@ export default function EditTripPage() {
     const { name, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'number' ? Number(value) : value,
+      [name]: value,
     }));
   };
 
@@ -294,12 +325,12 @@ export default function EditTripPage() {
             
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
-                <label htmlFor="price_per_seat">{t('trips.pricePerSeat')} *</label>
+                <label htmlFor="price_per_seat">{t('trips.pricePerSeatByn')} *</label>
                 <Input
                   id="price_per_seat"
                   name="price_per_seat"
-                  type="number"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
                   value={formData.price_per_seat}
                   onChange={handleChange}
                   required
@@ -310,9 +341,8 @@ export default function EditTripPage() {
                 <Input
                   id="total_seats"
                   name="total_seats"
-                  type="number"
-                  min="1"
-                  max="10"
+                  type="text"
+                  inputMode="numeric"
                   value={formData.total_seats}
                   onChange={handleChange}
                   required
@@ -423,6 +453,13 @@ export default function EditTripPage() {
               />
             </div>
           </div>
+
+          {/* Validation Error */}
+          {validationError && (
+            <div className={styles.error}>
+              {validationError}
+            </div>
+          )}
 
           {/* Error Message */}
           {error && (
