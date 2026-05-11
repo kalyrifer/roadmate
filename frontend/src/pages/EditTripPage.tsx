@@ -12,6 +12,7 @@ import styles from './NewTripPage.module.css';
 type EditTripFormData = Omit<TripFormData, 'price_per_seat' | 'total_seats'> & {
   price_per_seat: string;
   total_seats: string;
+  arrival_next_day: boolean;
 };
 
 const getPriceValue = (value: string) => Number(value.replace(',', '.'));
@@ -32,6 +33,7 @@ export default function EditTripPage() {
     departure_time_end: '',
     is_time_range: false,
     arrival_time: '',
+    arrival_next_day: false,
     price_per_seat: '0',
     total_seats: '1',
     description: '',
@@ -74,6 +76,7 @@ export default function EditTripPage() {
         departure_time_end: trip.departure_time_end || '',
         is_time_range: trip.is_time_range || false,
         arrival_time: trip.arrival_time || '',
+        arrival_next_day: false,
         price_per_seat: String(trip.price_per_seat ?? 0),
         total_seats: String(trip.total_seats ?? 1),
         description: trip.description || '',
@@ -128,19 +131,13 @@ export default function EditTripPage() {
       return;
     }
 
-    if (formData.arrival_time && formData.departure_time_start) {
-      if (formData.arrival_time < formData.departure_time_start) {
-        setValidationError(t('errors.arrivalBeforeDeparture'));
-        return;
-      }
-    }
-
     updateTripMutation.mutate({
       ...formData,
       price_per_seat: price,
       total_seats: seats,
       departure_time_end: formData.is_time_range ? formData.departure_time_end || undefined : undefined,
       arrival_time: formData.arrival_time || undefined,
+      arrival_next_day: formData.arrival_next_day || undefined,
       from_address: formData.from_address || undefined,
       to_address: formData.to_address || undefined,
       description: formData.description || undefined,
@@ -315,6 +312,18 @@ export default function EditTripPage() {
                   value={formData.arrival_time}
                   onChange={handleChange}
                 />
+                {formData.arrival_time && formData.departure_time_start && formData.arrival_time < formData.departure_time_start && !formData.arrival_next_day && (
+                  <>
+                    <span className={styles.arrivalWarning}>{t('errors.arrivalBeforeDeparture')}</span>
+                    <button
+                      type="button"
+                      className={styles.arrivalNextDayBtn}
+                      onClick={() => setFormData((prev) => ({ ...prev, arrival_next_day: true }))}
+                    >
+                      {t('trips.arrivalNextDayHint')}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -453,13 +462,6 @@ export default function EditTripPage() {
               />
             </div>
           </div>
-
-          {/* Validation Error */}
-          {validationError && (
-            <div className={styles.error}>
-              {validationError}
-            </div>
-          )}
 
           {/* Error Message */}
           {error && (

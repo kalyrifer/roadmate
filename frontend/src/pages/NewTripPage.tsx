@@ -11,6 +11,7 @@ import styles from './NewTripPage.module.css';
 type NewTripFormData = Omit<TripFormData, 'price_per_seat' | 'total_seats'> & {
   price_per_seat: string;
   total_seats: string;
+  arrival_next_day: boolean;
 };
 
 const initialFormData: NewTripFormData = {
@@ -23,6 +24,7 @@ const initialFormData: NewTripFormData = {
   departure_time_end: '',
   is_time_range: false,
   arrival_time: '',
+  arrival_next_day: false,
   price_per_seat: '0',
   total_seats: '1',
   description: '',
@@ -78,15 +80,6 @@ export default function NewTripPage() {
     e.preventDefault();
     setValidationError(null);
 
-    if (
-      formData.departure_time_start &&
-      formData.arrival_time &&
-      formData.arrival_time < formData.departure_time_start
-    ) {
-      setValidationError(t('errors.arrivalBeforeDeparture'));
-      return;
-    }
-
     const pricePerSeat = getPriceValue(formData.price_per_seat);
     const totalSeats = Number(formData.total_seats);
 
@@ -111,6 +104,7 @@ export default function NewTripPage() {
       total_seats: totalSeats,
       departure_time_end: formData.is_time_range ? formData.departure_time_end || undefined : undefined,
       arrival_time: formData.arrival_time || undefined,
+      arrival_next_day: formData.arrival_next_day || undefined,
       from_address: formData.from_address || undefined,
       to_address: formData.to_address || undefined,
       description: formData.description || undefined,
@@ -125,22 +119,11 @@ export default function NewTripPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => {
-      if (name === 'arrival_time' && value && prev.departure_time_start && value < prev.departure_time_start) {
-        return prev;
+      const updated = { ...prev, [name]: value };
+      if (name === 'arrival_time' || name === 'departure_time_start') {
+        updated.arrival_next_day = false;
       }
-
-      if (name === 'departure_time_start' && value && prev.arrival_time && prev.arrival_time < value) {
-        return {
-          ...prev,
-          [name]: value,
-          arrival_time: '',
-        };
-      }
-
-      return {
-        ...prev,
-        [name]: value,
-      };
+      return updated;
     });
   };
 
@@ -276,10 +259,21 @@ export default function NewTripPage() {
                   id="arrival_time"
                   name="arrival_time"
                   type="time"
-                  min={formData.departure_time_start || undefined}
                   value={formData.arrival_time}
                   onChange={handleChange}
                 />
+                {formData.arrival_time && formData.departure_time_start && formData.arrival_time < formData.departure_time_start && !formData.arrival_next_day && (
+                  <>
+                    <span className={styles.arrivalWarning}>{t('errors.arrivalBeforeDeparture')}</span>
+                    <button
+                      type="button"
+                      className={styles.arrivalNextDayBtn}
+                      onClick={() => setFormData((prev) => ({ ...prev, arrival_next_day: true }))}
+                    >
+                      {t('trips.arrivalNextDayHint')}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>

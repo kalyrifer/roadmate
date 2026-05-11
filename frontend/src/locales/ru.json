@@ -210,7 +210,8 @@
     "updateSuccessTitle": "Поездка обновлена!",
     "updateSuccessMessage": "Поездка успешно обновлена.",
     "editTrip": "Редактировать поездку",
-    "backToMyTrips": "Вернуться к моим поездкам"
+    "backToMyTrips": "Вернуться к моим поездкам",
+    "arrivalNextDayHint": "дата прибытия отличается от даты отправления?"
   },
   "requests": {
     "title": "Заявки",

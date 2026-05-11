@@ -375,3 +375,29 @@
     flex-direction: column-reverse;
   }
 }
+
+/* Arrival time warning */
+.arrivalWarning {
+  font-size: 13px;
+  color: #dc2626;
+  margin-top: 4px;
+}
+
+.arrivalNextDayBtn {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--color-text-secondary, #64748b);
+  background: var(--gray-100, #f1f5f9);
+  border: 1px solid var(--gray-300, #cbd5e1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.arrivalNextDayBtn:hover {
+  background: var(--gray-200, #e2e8f0);
+  border-color: var(--gray-400, #94a3b8);
+}

@@ -210,7 +210,8 @@
     "cancel": "Cancel",
     "cancelTrip": "Cancel trip",
     "confirmCancelTrip": "Are you sure you want to cancel this trip?",
-    "confirmCancel": "Yes, cancel"
+    "confirmCancel": "Yes, cancel",
+    "arrivalNextDayHint": "arrival date differs from departure date?"
   },
   "requests": {
     "title": "Requests",
