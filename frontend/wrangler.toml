@@ -1,5 +1,5 @@
 # frontend/wrangler.toml
-name = 'roadmatefrontend'
+name = 'roadmate'
 type = "pages"
 
 # Cloudflare Pages configuration
