@@ -16,6 +16,7 @@ type EditTripFormData = Omit<TripFormData, 'price_per_seat' | 'total_seats'> & {
 };
 
 const getPriceValue = (value: string) => Number(value.replace(',', '.'));
+const normalizeTime = (value?: string) => value ? value.slice(0, 5) : '';
 
 export default function EditTripPage() {
   const { t } = useTranslation();
@@ -72,10 +73,10 @@ export default function EditTripPage() {
         to_city: trip.to_city || '',
         to_address: trip.to_address || '',
         departure_date: trip.departure_date || '',
-        departure_time_start: trip.departure_time_start || '',
-        departure_time_end: trip.departure_time_end || '',
+        departure_time_start: normalizeTime(trip.departure_time_start),
+        departure_time_end: normalizeTime(trip.departure_time_end),
         is_time_range: trip.is_time_range || false,
-        arrival_time: trip.arrival_time || '',
+        arrival_time: normalizeTime(trip.arrival_time),
         arrival_next_day: false,
         price_per_seat: String(trip.price_per_seat ?? 0),
         total_seats: String(trip.total_seats ?? 1),
@@ -135,8 +136,9 @@ export default function EditTripPage() {
       ...formData,
       price_per_seat: price,
       total_seats: seats,
-      departure_time_end: formData.is_time_range ? formData.departure_time_end || undefined : undefined,
-      arrival_time: formData.arrival_time || undefined,
+      departure_time_start: normalizeTime(formData.departure_time_start),
+      departure_time_end: formData.is_time_range ? normalizeTime(formData.departure_time_end) || undefined : undefined,
+      arrival_time: normalizeTime(formData.arrival_time) || undefined,
       arrival_next_day: formData.arrival_next_day || undefined,
       from_address: formData.from_address || undefined,
       to_address: formData.to_address || undefined,
@@ -148,11 +150,14 @@ export default function EditTripPage() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    const { name, value } = e.target;
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value };
+      if (name === 'arrival_time' || name === 'departure_time_start') {
+        updated.arrival_next_day = false;
+      }
+      return updated;
+    });
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -464,9 +469,9 @@ export default function EditTripPage() {
           </div>
 
           {/* Error Message */}
-          {error && (
+          {(validationError || error) && (
             <div className={styles.error}>
-              {error}
+              {validationError || error}
             </div>
           )}
 

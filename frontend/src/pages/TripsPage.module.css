@@ -527,13 +527,15 @@
 .tripRoute {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  justify-content: flex-start;
+  gap: var(--space-2);
   margin-bottom: var(--space-4);
 }
 
 .routePoint {
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
+  max-width: 46%;
 }
 
 .routeTime {
@@ -552,7 +554,9 @@
 
 .routeArrow {
   color: var(--gray-400);
-  font-size: var(--font-size-xl);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
   flex-shrink: 0;
 }
 

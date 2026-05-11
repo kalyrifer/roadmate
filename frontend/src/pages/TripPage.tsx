@@ -497,7 +497,7 @@ export default function TripPage() {
         {/* Кнопки управления для владельца */}
         {isOwner && (
           <div className={styles.ownerActions}>
-            {trip.status !== 'completed' && (
+            {trip.status !== 'completed' && trip.status !== 'cancelled' && (
               <Button 
                 variant="outline" 
                 size="sm" 

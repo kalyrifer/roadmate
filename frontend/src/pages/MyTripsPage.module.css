@@ -154,7 +154,8 @@
 .tripRoute {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: flex-start;
+  gap: 8px;
   margin-bottom: 16px;
   padding: 12px 16px;
   background: rgba(248, 250, 252, 0.8);
@@ -162,7 +163,9 @@
 }
 
 .routePoint {
-  flex: 1;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 46%;
 }
 
 .routeTime {
@@ -175,11 +178,17 @@
 .routeLocation {
   font-size: 13px;
   color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .routeArrow {
-  font-size: 20px;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
   color: var(--color-primary);
+  flex-shrink: 0;
 }
 
 .tripFooter {
