@@ -298,7 +298,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        case_sensitive=True,
+        case_sensitive=False,
         extra="ignore"
     )
 
@@ -310,8 +310,15 @@ class Settings(BaseSettings):
     testing: bool = Field(default=False, description="Режим тестирования")
 
     # База данных
-    database_url: str = Field(default="postgresql+asyncpg://postgres:postgres@localhost:5432/roadmate2", description="URL БД")
-    database_url_sync: str = Field(default="postgresql://postgres:postgres@localhost:5432/roadmate2", description="Синхронный URL БД")
+    database_url: str = Field(
+        default="postgresql+asyncpg://postgres:postgres@localhost:5432/roadmate2",
+        validation_alias="DATABASE_URL"
+    )
+
+    database_url_sync: str = Field(
+        default="postgresql://postgres:postgres@localhost:5432/roadmate2",
+        validation_alias="DATABASE_URL_SYNC"
+    )
     database_echo: bool = Field(default=False, description="Логирование SQL")
     database_pool_size: int = Field(default=20, description="Размер пула")
     database_max_overflow: int = Field(default=10, description="Макс переполнение")
