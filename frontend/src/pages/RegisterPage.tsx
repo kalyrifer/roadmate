@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { Button, Input, Card } from '../components/ui';
-import { authApi } from '../services/api/auth';
+import { useAuthStore } from '../stores/auth';
 import styles from './LoginPage.module.css';
 
 interface RegisterForm {
@@ -18,13 +18,15 @@ interface RegisterForm {
 export default function RegisterPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const registerUser = useAuthStore((state) => state.register);
   const [error, setError] = useState<string>('');
   
   const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterForm>();
   const password = watch('password');
 
   const registerMutation = useMutation({
-    mutationFn: authApi.register,
+    mutationFn: (data: { email: string; password: string; name: string }) =>
+      registerUser(data),
     onSuccess: () => {
       navigate('/');
     },

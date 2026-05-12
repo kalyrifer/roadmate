@@ -15,10 +15,11 @@ import type {
   CreateRequestData,
   AuthResponse
 } from '../types';
+import { BASE_URL } from '../config';
 
 // Create axios instance
 const axiosInstance = axios.create({
-  baseURL: '/api/v1',
+  baseURL: BASE_URL,
   withCredentials: true,
 });
 
