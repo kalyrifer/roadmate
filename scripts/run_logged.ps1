@@ -51,7 +51,13 @@ Write-Host "[run_logged] launching:   $exe $($exeArgs -join ' ')"
 Write-Host ""
 
 # 2>&1 merges stderr into stdout so Tee-Object captures both.
-& $exe @exeArgs 2>&1 | Tee-Object -FilePath $LogPath -Append
+# ForEach-Object { "$_" } coerces ErrorRecord objects (PowerShell wraps
+# everything written to stderr by a native exe in ErrorRecord) into plain
+# strings, which prevents PowerShell from rendering them as a scary
+# "NativeCommandError" block while still keeping the line content intact.
+& $exe @exeArgs 2>&1 |
+    ForEach-Object { "$_" } |
+    Tee-Object -FilePath $LogPath -Append
 
 $rc = $LASTEXITCODE
 Write-Host ""
