@@ -2,13 +2,33 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
+import { AxiosError } from 'axios';
 import { Button, Card, Input, Modal } from '../components/ui';
 import DatePickerInput from '../components/DatePickerInput';
 import { tripsApi } from '../services/api/trips';
 import type { TripFormData, Trip } from '../types';
 import styles from './NewTripPage.module.css';
 
+interface ValidationDetail {
+  msg?: string;
+  loc?: (string | number)[];
+}
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof AxiosError) {
+    const detail = error.response?.data?.detail;
+    if (typeof detail === 'string') {
+      return detail;
+    }
+    if (Array.isArray(detail) && detail.length > 0) {
+      const first = detail[0] as ValidationDetail;
+      const field = first.loc?.slice(1).join('.');
+      const msg = first.msg ?? fallback;
+      return field ? `${field}: ${msg}` : msg;
+    }
+  }
+  return fallback;
+}
 
 export default function NewTripPage() {
   const { t } = useTranslation();
@@ -23,7 +43,7 @@ export default function NewTripPage() {
     departure_time_end: '',
     is_time_range: false,
     arrival_time: '',
-    price_per_seat: 0,
+    price_per_seat: 100,
     total_seats: 1,
     description: '',
     luggage_allowed: true,
@@ -72,7 +92,7 @@ export default function NewTripPage() {
       departure_time_end: '',
       is_time_range: false,
       arrival_time: '',
-      price_per_seat: 0,
+      price_per_seat: 100,
       total_seats: 1,
       description: '',
       luggage_allowed: true,
@@ -258,7 +278,8 @@ export default function NewTripPage() {
                   id="price_per_seat"
                   name="price_per_seat"
                   type="number"
-                  min="0"
+                  min="0.01"
+                  step="0.01"
                   value={formData.price_per_seat}
                   onChange={handleChange}
                   required
@@ -386,7 +407,7 @@ export default function NewTripPage() {
           {/* Error Message */}
           {createTripMutation.isError && (
             <div className={styles.error}>
-              {t('errors.createTrip')}
+              {getErrorMessage(createTripMutation.error, t('errors.createTrip'))}
             </div>
           )}
 

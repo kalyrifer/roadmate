@@ -299,7 +299,8 @@ export default function EditTripPage() {
                   id="price_per_seat"
                   name="price_per_seat"
                   type="number"
-                  min="0"
+                  min="0.01"
+                  step="0.01"
                   value={formData.price_per_seat}
                   onChange={handleChange}
                   required
