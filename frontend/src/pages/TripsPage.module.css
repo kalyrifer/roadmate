@@ -527,33 +527,50 @@
 .tripRoute {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  justify-content: flex-start;
+  gap: var(--space-3);
   margin-bottom: var(--space-4);
 }
 
 .routePoint {
-  flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .routeTime {
   font-size: var(--font-size-sm);
   color: var(--gray-600);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+}
+
+.routeCity {
+  font-weight: 600;
+  color: var(--gray-900);
+  font-size: var(--font-size-base);
+  line-height: 1.25;
+}
+
+.routeStreet {
+  font-weight: 400;
+  color: var(--gray-600);
+  font-size: var(--font-size-sm);
+  line-height: 1.25;
 }
 
 .routeLocation {
   font-weight: 500;
   color: var(--gray-900);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .routeArrow {
-  color: var(--gray-400);
-  font-size: var(--font-size-xl);
+  color: var(--primary);
+  font-size: 32px;
+  line-height: 1;
+  font-weight: 700;
   flex-shrink: 0;
+  padding: 0 4px;
 }
 
 .tripBadges {

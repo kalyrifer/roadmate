@@ -33,11 +33,13 @@
   background: var(--gray-100);
   border-radius: var(--radius);
   margin-bottom: 24px;
+  text-align: center;
 }
 
 .routePoint {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 4px;
 }
 
@@ -46,16 +48,35 @@
   color: var(--gray-600);
 }
 
+.routeCity {
+  font-weight: 700;
+  color: var(--gray-900);
+  font-size: 1.125rem;
+  line-height: 1.3;
+}
+
+.routeStreet {
+  font-weight: 400;
+  color: var(--gray-600);
+  font-size: 0.9375rem;
+  line-height: 1.3;
+}
+
 .routeAddress {
   font-weight: 600;
   color: var(--gray-900);
 }
 
 .routeDivider {
-  text-align: center;
-  color: var(--gray-400);
-  font-size: 1.25rem;
-  margin: 12px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--primary);
+  margin: 14px 0;
+}
+
+.routeDividerIcon {
+  display: block;
 }
 
 .viaPoints,

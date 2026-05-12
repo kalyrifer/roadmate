@@ -382,9 +382,39 @@ export default function TripPage() {
         <div className={styles.route}>
           <div className={styles.routePoint}>
             <div className={styles.routeTime}>{formatDate(trip.departure_date + 'T' + trip.departure_time_start)}</div>
-            <div className={styles.routeAddress}>{trip.from_address || trip.from_city}</div>
+            <div className={styles.routeCity}>{trip.from_city}</div>
+            {trip.from_address && (
+              <div className={styles.routeStreet}>{trip.from_address}</div>
+            )}
           </div>
-          <div className={styles.routeDivider}>↓</div>
+          <div className={styles.routeDivider} aria-hidden="true">
+            <svg
+              className={styles.routeDividerIcon}
+              width="28"
+              height="40"
+              viewBox="0 0 28 40"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <line
+                x1="14"
+                y1="2"
+                x2="14"
+                y2="28"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+              <path
+                d="M4 24 L14 38 L24 24"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+            </svg>
+          </div>
           <div className={styles.routePoint}>
             <div className={styles.routeTime}>
               {trip.arrival_time
@@ -397,7 +427,10 @@ export default function TripPage() {
                   )
                 : '—'}
             </div>
-            <div className={styles.routeAddress}>{trip.to_address || trip.to_city}</div>
+            <div className={styles.routeCity}>{trip.to_city}</div>
+            {trip.to_address && (
+              <div className={styles.routeStreet}>{trip.to_address}</div>
+            )}
           </div>
         </div>
 
