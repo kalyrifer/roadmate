@@ -160,6 +160,24 @@ export default function TripPage() {
     });
   };
 
+  const getArrivalDate = (
+    departureDate: string,
+    departureTimeStart: string | undefined,
+    arrivalTime: string | undefined
+  ): string => {
+    if (
+      arrivalTime &&
+      departureTimeStart &&
+      arrivalTime < departureTimeStart
+    ) {
+      const [y, m, d] = departureDate.split('-').map(Number);
+      if (!y || !m || !d) return departureDate;
+      const next = new Date(Date.UTC(y, m - 1, d + 1));
+      return next.toISOString().split('T')[0];
+    }
+    return departureDate;
+  };
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('ru-RU', {
       style: 'currency',
@@ -369,7 +387,15 @@ export default function TripPage() {
           <div className={styles.routeDivider}>↓</div>
           <div className={styles.routePoint}>
             <div className={styles.routeTime}>
-              {trip.arrival_time ? formatDate(trip.departure_date + 'T' + trip.arrival_time) : '—'}
+              {trip.arrival_time
+                ? formatDate(
+                    getArrivalDate(
+                      trip.departure_date,
+                      trip.departure_time_start,
+                      trip.arrival_time
+                    ) + 'T' + trip.arrival_time
+                  )
+                : '—'}
             </div>
             <div className={styles.routeAddress}>{trip.to_address || trip.to_city}</div>
           </div>

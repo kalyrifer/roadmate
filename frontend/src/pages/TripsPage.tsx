@@ -280,6 +280,24 @@ export default function TripsPage() {
     setUrlSearchParams(new URLSearchParams(), { replace: true });
   };
 
+  const getArrivalDate = (
+    departureDate: string,
+    departureTimeStart: string | undefined,
+    arrivalTime: string | undefined
+  ): string => {
+    if (
+      arrivalTime &&
+      departureTimeStart &&
+      arrivalTime < departureTimeStart
+    ) {
+      const [y, m, d] = departureDate.split('-').map(Number);
+      if (!y || !m || !d) return departureDate;
+      const next = new Date(Date.UTC(y, m - 1, d + 1));
+      return next.toISOString().split('T')[0];
+    }
+    return departureDate;
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('ru-RU', {
@@ -739,7 +757,13 @@ export default function TripsPage() {
                     <div className={styles.routePoint}>
                       <div className={styles.routeTime}>
                         {trip.arrival_time
-                          ? formatDate(trip.departure_date + 'T' + trip.arrival_time)
+                          ? formatDate(
+                              getArrivalDate(
+                                trip.departure_date,
+                                trip.departure_time_start,
+                                trip.arrival_time
+                              ) + 'T' + trip.arrival_time
+                            )
                           : '—'}
                       </div>
                       <div className={styles.routeLocation}>{trip.to_address || trip.to_city}</div>

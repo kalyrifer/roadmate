@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
@@ -36,6 +36,22 @@ export default function NewTripPage() {
   });
   const [createdTrip, setCreatedTrip] = useState<Trip | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [priceInputRaw, setPriceInputRaw] = useState<string>('0');
+  const [seatsInputRaw, setSeatsInputRaw] = useState<string>('1');
+  const [arrivalAcknowledgedDifferentDay, setArrivalAcknowledgedDifferentDay] = useState(false);
+
+  const arrivalBeforeDeparture =
+    !!formData.arrival_time &&
+    !!formData.departure_time_start &&
+    formData.arrival_time < formData.departure_time_start;
+  const showArrivalWarning =
+    arrivalBeforeDeparture && !arrivalAcknowledgedDifferentDay;
+
+  useEffect(() => {
+    if (!arrivalBeforeDeparture && arrivalAcknowledgedDifferentDay) {
+      setArrivalAcknowledgedDifferentDay(false);
+    }
+  }, [arrivalBeforeDeparture, arrivalAcknowledgedDifferentDay]);
 
   const createTripMutation = useMutation({
     mutationFn: (data: TripFormData) => tripsApi.create(data),
@@ -83,10 +99,14 @@ export default function NewTripPage() {
       car_color: '',
       car_license_plate: '',
     });
+    setPriceInputRaw('0');
+    setSeatsInputRaw('1');
+    setArrivalAcknowledgedDifferentDay(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (showArrivalWarning) return;
     createTripMutation.mutate({
       ...formData,
       departure_time_end: formData.is_time_range ? formData.departure_time_end || undefined : undefined,
@@ -98,6 +118,24 @@ export default function NewTripPage() {
       car_color: formData.car_color || undefined,
       car_license_plate: formData.car_license_plate || undefined,
     });
+  };
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setPriceInputRaw(value);
+    setFormData((prev) => ({
+      ...prev,
+      price_per_seat: value === '' ? 0 : Number(value),
+    }));
+  };
+
+  const handleSeatsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setSeatsInputRaw(value);
+    setFormData((prev) => ({
+      ...prev,
+      total_seats: value === '' ? 0 : Number(value),
+    }));
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -243,6 +281,20 @@ export default function NewTripPage() {
                   value={formData.arrival_time}
                   onChange={handleChange}
                 />
+                {showArrivalWarning && (
+                  <div className={styles.fieldWarning}>
+                    <div className={styles.fieldWarningMessage}>
+                      {t('trips.arrivalBeforeDeparture')}
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.fieldWarningButton}
+                      onClick={() => setArrivalAcknowledgedDifferentDay(true)}
+                    >
+                      {t('trips.arrivalDifferentDayPrompt')}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -259,8 +311,9 @@ export default function NewTripPage() {
                   name="price_per_seat"
                   type="number"
                   min="0"
-                  value={formData.price_per_seat}
-                  onChange={handleChange}
+                  className={styles.noSpinner}
+                  value={priceInputRaw}
+                  onChange={handlePriceChange}
                   required
                 />
               </div>
@@ -272,8 +325,8 @@ export default function NewTripPage() {
                   type="number"
                   min="1"
                   max="10"
-                  value={formData.total_seats}
-                  onChange={handleChange}
+                  value={seatsInputRaw}
+                  onChange={handleSeatsChange}
                   required
                 />
               </div>
