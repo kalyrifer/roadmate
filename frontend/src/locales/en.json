@@ -123,12 +123,13 @@
     "seats": "seats",
     "price": "Price",
     "pricePerSeat": "Price per seat",
+    "pricePerSeatByn": "Price per seats (BYN)",
     "driver": "Driver",
     "passenger": "Passenger",
     "description": "Description",
     "status": {
       "draft": "Draft",
-      "published": "Published",
+      "published": "Active",
       "active": "Active",
       "completed": "Completed",
       "cancelled": "Cancelled"
@@ -209,7 +210,8 @@
     "cancel": "Cancel",
     "cancelTrip": "Cancel trip",
     "confirmCancelTrip": "Are you sure you want to cancel this trip?",
-    "confirmCancel": "Yes, cancel"
+    "confirmCancel": "Yes, cancel",
+    "arrivalNextDayHint": "arrival date differs from departure date?"
   },
   "requests": {
     "title": "Requests",
@@ -345,7 +347,10 @@
     "tripNotFound": "Trip not found",
     "updateTrip": "Failed to update trip",
     "deleteTrip": "Failed to cancel trip",
-    "createTrip": "Failed to create trip"
+    "createTrip": "Failed to create trip",
+    "arrivalBeforeDeparture": "Arrival time cannot be earlier than departure time.",
+    "invalidPrice": "Enter a valid price.",
+    "invalidSeats": "Enter seats from 1 to 8."
   },
   "reviews": {
     "reviewsTitle": "Reviews",

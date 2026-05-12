@@ -8,34 +8,44 @@ import { tripsApi } from '../services/api/trips';
 import type { TripFormData, Trip } from '../types';
 import styles from './NewTripPage.module.css';
 
+type NewTripFormData = Omit<TripFormData, 'price_per_seat' | 'total_seats'> & {
+  price_per_seat: string;
+  total_seats: string;
+  arrival_next_day: boolean;
+};
 
+const initialFormData: NewTripFormData = {
+  from_city: '',
+  from_address: '',
+  to_city: '',
+  to_address: '',
+  departure_date: '',
+  departure_time_start: '',
+  departure_time_end: '',
+  is_time_range: false,
+  arrival_time: '',
+  arrival_next_day: false,
+  price_per_seat: '0',
+  total_seats: '1',
+  description: '',
+  luggage_allowed: true,
+  smoking_allowed: false,
+  music_allowed: true,
+  pets_allowed: false,
+  car_model: '',
+  car_color: '',
+  car_license_plate: '',
+};
+
+const getPriceValue = (value: string) => Number(value.replace(',', '.'));
 
 export default function NewTripPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState<TripFormData>({
-    from_city: '',
-    from_address: '',
-    to_city: '',
-    to_address: '',
-    departure_date: '',
-    departure_time_start: '',
-    departure_time_end: '',
-    is_time_range: false,
-    arrival_time: '',
-    price_per_seat: 0,
-    total_seats: 1,
-    description: '',
-    luggage_allowed: true,
-    smoking_allowed: false,
-    music_allowed: true,
-    pets_allowed: false,
-    car_model: '',
-    car_color: '',
-    car_license_plate: '',
-  });
+  const [formData, setFormData] = useState<NewTripFormData>(initialFormData);
   const [createdTrip, setCreatedTrip] = useState<Trip | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const createTripMutation = useMutation({
     mutationFn: (data: TripFormData) => tripsApi.create(data),
@@ -62,50 +72,59 @@ export default function NewTripPage() {
   const handleCreateAnother = () => {
     setShowSuccessModal(false);
     setCreatedTrip(null);
-    setFormData({
-      from_city: '',
-      from_address: '',
-      to_city: '',
-      to_address: '',
-      departure_date: '',
-      departure_time_start: '',
-      departure_time_end: '',
-      is_time_range: false,
-      arrival_time: '',
-      price_per_seat: 0,
-      total_seats: 1,
-      description: '',
-      luggage_allowed: true,
-      smoking_allowed: false,
-      music_allowed: true,
-      pets_allowed: false,
-      car_model: '',
-      car_color: '',
-      car_license_plate: '',
-    });
+    setValidationError(null);
+    setFormData(initialFormData);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createTripMutation.mutate({
+    setValidationError(null);
+
+    const pricePerSeat = getPriceValue(formData.price_per_seat);
+    const totalSeats = Number(formData.total_seats);
+
+    if (formData.price_per_seat.trim() === '' || Number.isNaN(pricePerSeat) || pricePerSeat <= 0) {
+      setValidationError(t('errors.invalidPrice'));
+      return;
+    }
+
+    if (
+      formData.total_seats.trim() === '' ||
+      !Number.isInteger(totalSeats) ||
+      totalSeats < 1 ||
+      totalSeats > 8
+    ) {
+      setValidationError(t('errors.invalidSeats'));
+      return;
+    }
+
+    const payload: TripFormData = {
       ...formData,
+      price_per_seat: pricePerSeat,
+      total_seats: totalSeats,
       departure_time_end: formData.is_time_range ? formData.departure_time_end || undefined : undefined,
       arrival_time: formData.arrival_time || undefined,
+      arrival_next_day: formData.arrival_next_day || undefined,
       from_address: formData.from_address || undefined,
       to_address: formData.to_address || undefined,
       description: formData.description || undefined,
       car_model: formData.car_model || undefined,
       car_color: formData.car_color || undefined,
       car_license_plate: formData.car_license_plate || undefined,
-    });
+    };
+
+    createTripMutation.mutate(payload);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'number' ? Number(value) : value,
-    }));
+    const { name, value } = e.target;
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value };
+      if (name === 'arrival_time' || name === 'departure_time_start') {
+        updated.arrival_next_day = false;
+      }
+      return updated;
+    });
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -243,6 +262,18 @@ export default function NewTripPage() {
                   value={formData.arrival_time}
                   onChange={handleChange}
                 />
+                {formData.arrival_time && formData.departure_time_start && formData.arrival_time < formData.departure_time_start && !formData.arrival_next_day && (
+                  <>
+                    <span className={styles.arrivalWarning}>{t('errors.arrivalBeforeDeparture')}</span>
+                    <button
+                      type="button"
+                      className={styles.arrivalNextDayBtn}
+                      onClick={() => setFormData((prev) => ({ ...prev, arrival_next_day: true }))}
+                    >
+                      {t('trips.arrivalNextDayHint')}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -253,12 +284,13 @@ export default function NewTripPage() {
             
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
-                <label htmlFor="price_per_seat">{t('trips.pricePerSeat')} *</label>
+                <label htmlFor="price_per_seat">{t('trips.pricePerSeatByn')} *</label>
                 <Input
                   id="price_per_seat"
                   name="price_per_seat"
-                  type="number"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*[,.]?[0-9]*"
                   value={formData.price_per_seat}
                   onChange={handleChange}
                   required
@@ -269,9 +301,9 @@ export default function NewTripPage() {
                 <Input
                   id="total_seats"
                   name="total_seats"
-                  type="number"
-                  min="1"
-                  max="10"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={formData.total_seats}
                   onChange={handleChange}
                   required
@@ -384,9 +416,9 @@ export default function NewTripPage() {
           </div>
 
           {/* Error Message */}
-          {createTripMutation.isError && (
+          {(validationError || createTripMutation.isError) && (
             <div className={styles.error}>
-              {t('errors.createTrip')}
+              {validationError || t('errors.createTrip')}
             </div>
           )}
 

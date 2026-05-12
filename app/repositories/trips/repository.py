@@ -124,10 +124,16 @@ class TripRepository:
         Returns:
             Trip: Обновленная поездка
         """
+        time_fields = {"departure_time_start", "departure_time_end", "arrival_time"}
+
         # Обновляем только предоставленные поля
         for key, value in update_data.items():
+            if key in time_fields and isinstance(value, str):
+                value = time.fromisoformat(value[:5])
             if value is not None and hasattr(trip, key):
                 setattr(trip, key, value)
+
+        trip.normalize_times()
         
         trip.updated_at = datetime.utcnow()
         

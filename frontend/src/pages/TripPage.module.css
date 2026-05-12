@@ -33,29 +33,40 @@
   background: var(--gray-100);
   border-radius: var(--radius);
   margin-bottom: 24px;
+  text-align: center;
 }
 
 .routePoint {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 4px;
 }
 
 .routeTime {
   font-size: 0.875rem;
   color: var(--gray-600);
+  text-align: center;
+}
+
+.routeCity {
+  font-weight: 600;
+  color: var(--gray-900);
+  text-align: center;
 }
 
 .routeAddress {
-  font-weight: 600;
-  color: var(--gray-900);
+  color: var(--gray-700);
+  text-align: center;
 }
 
 .routeDivider {
   text-align: center;
   color: var(--gray-400);
-  font-size: 1.25rem;
-  margin: 12px 0;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  margin: 14px 0;
 }
 
 .viaPoints,
